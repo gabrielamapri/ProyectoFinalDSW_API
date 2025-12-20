@@ -17,6 +17,10 @@ namespace CentroTerapia.Infrastructure.Persistence.Context
         public DbSet<Especialidad> Especialidades { get; set; }
         public DbSet<Terapeuta> Terapeutas { get; set; }
         public DbSet<Paciente> Pacientes { get; set; }
+        public DbSet<Familia> Familias { get; set; }
+        public DbSet<TipoSesion> TiposSesion { get; set; }
+        public DbSet<FranjaDisponibilidad> FranjasDisponibilidad { get; set; }
+        public DbSet<Terapia> Terapias { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
