@@ -6,5 +6,6 @@ namespace CentroTerapia.Domain.Ports.Out
     {
         Task<IEnumerable<Paciente>> GetByFamiliaIdAsync(int familiaId);
         Task<Paciente?> GetWithFamiliaAndCitasAsync(int id);
+        Task<(IEnumerable<Paciente> Items, int Total)> GetPagedAsync(int page, int pageSize, string? search, CentroTerapia.Domain.Enums.Sexo? sexo);
     }
 }

@@ -70,8 +70,7 @@ namespace CentroTerapia.Infrastructure.Migrations
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     Apellidos = table.Column<string>(type: "longtext", nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    Especialidades = table.Column<string>(type: "longtext", nullable: false)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    EspecialidadId = table.Column<int>(type: "int", nullable: true),
                     Presentacion = table.Column<string>(type: "longtext", nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     Telefono = table.Column<string>(type: "longtext", nullable: false)
@@ -84,6 +83,12 @@ namespace CentroTerapia.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Terapeuta", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Terapeuta_Especialidades_EspecialidadId",
+                        column: x => x.EspecialidadId,
+                        principalTable: "Especialidades",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.SetNull);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
 

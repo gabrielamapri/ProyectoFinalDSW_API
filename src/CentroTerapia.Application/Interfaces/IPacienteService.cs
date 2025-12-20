@@ -6,6 +6,7 @@ namespace CentroTerapia.Application.Interfaces
     {
         Task<PacienteDto> GetByIdAsync(int id);
         Task<IEnumerable<PacienteDto>> GetAllAsync();
+        Task<(IEnumerable<PacienteDto> Items, int Total)> GetPagedAsync(int page, int pageSize, string? search, string? sexo);
         Task<PacienteDto> CreateAsync(CreatePacienteDto dto);
         Task<PacienteDto> UpdateAsync(int id, UpdatePacienteDto dto);
         Task<bool> DeleteAsync(int id);

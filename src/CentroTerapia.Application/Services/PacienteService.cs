@@ -45,6 +45,18 @@ namespace CentroTerapia.Application.Services
             return _mapper.Map<IEnumerable<PacienteDto>>(pacientes);
         }
 
+        public async Task<(IEnumerable<PacienteDto> Items, int Total)> GetPagedAsync(int page, int pageSize, string? search, string? sexo)
+        {
+            CentroTerapia.Domain.Enums.Sexo? sexoEnum = null;
+            if (!string.IsNullOrWhiteSpace(sexo))
+            {
+                if (Enum.TryParse<CentroTerapia.Domain.Enums.Sexo>(sexo, true, out var parsed)) sexoEnum = parsed;
+            }
+
+            var (items, total) = await _unitOfWork.Pacientes.GetPagedAsync(page <= 0 ? 1 : page, pageSize <=0 ? 10 : pageSize, search, sexoEnum);
+            return (_mapper.Map<IEnumerable<PacienteDto>>(items), total);
+        }
+
         public async Task<PacienteDto> GetByIdAsync(int id)
         {
             var paciente = await _unitOfWork.Pacientes.GetWithFamiliaAndCitasAsync(id);

@@ -23,5 +23,23 @@ namespace CentroTerapia.Infrastructure.Persistence.Repositories
                 .Include(t => t.Citas)
                 .FirstOrDefaultAsync(t => EF.Property<int>(t, "Id") == id);
         }
+
+        public async Task<(IEnumerable<Terapeuta> Items, int Total)> GetPagedAsync(int page, int pageSize, string? search, bool? activo)
+        {
+            var query = _dbSet.AsQueryable();
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var s = search.Trim().ToLower();
+                query = query.Where(t => t.Nombres.ToLower().Contains(s) || t.Apellidos.ToLower().Contains(s));
+            }
+            if (activo.HasValue)
+            {
+                query = query.Where(t => t.Activo == activo.Value);
+            }
+
+            var total = await query.CountAsync();
+            var items = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+            return (items, total);
+        }
     }
 }

@@ -45,6 +45,12 @@ namespace CentroTerapia.Application.Services
             return _mapper.Map<IEnumerable<FamiliaDto>>(items);
         }
 
+        public async Task<(IEnumerable<FamiliaDto> Items, int Total)> GetPagedAsync(int page, int pageSize, string? search)
+        {
+            var (items, total) = await _unitOfWork.Familias.GetPagedAsync(page <= 0 ? 1 : page, pageSize <= 0 ? 10 : pageSize, search);
+            return (_mapper.Map<IEnumerable<FamiliaDto>>(items), total);
+        }
+
         public async Task<FamiliaDto> GetByIdAsync(int id)
         {
             var item = await _unitOfWork.Familias.GetWithPacientesAsync(id);

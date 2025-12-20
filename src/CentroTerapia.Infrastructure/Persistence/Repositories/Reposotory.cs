@@ -25,6 +25,11 @@ namespace CentroTerapia.Infrastructure.Persistence.Repositories
             return await _dbSet.ToListAsync();
         }
 
+        public IQueryable<T> Query()
+        {
+            return _dbSet.AsQueryable();
+        }
+
         public async Task<T> CreateAsync(T entity)
         {
             await _dbSet.AddAsync(entity);

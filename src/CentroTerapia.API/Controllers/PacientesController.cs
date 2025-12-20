@@ -21,8 +21,16 @@ namespace CentroTerapia.API.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<PacienteDto>>> GetAll()
         {
-            var pacientes = await _pacienteService.GetAllAsync();
-            return Ok(pacientes);
+            // support paging and filtering
+            var q = HttpContext.Request.Query;
+            int page = int.TryParse(q["page"], out var p) ? p : 1;
+            int pageSize = int.TryParse(q["pageSize"], out var ps) ? ps : 20;
+            var search = q.ContainsKey("search") ? q["search"].ToString() : null;
+            var sexo = q.ContainsKey("sexo") ? q["sexo"].ToString() : null;
+
+            var (items, total) = await _pacienteService.GetPagedAsync(page, pageSize, search, sexo);
+            Response.Headers.Add("X-Total-Count", total.ToString());
+            return Ok(items);
         }
 
         [HttpGet("{id}")]

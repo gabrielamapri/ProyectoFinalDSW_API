@@ -45,6 +45,12 @@ namespace CentroTerapia.Application.Services
             return _mapper.Map<IEnumerable<TerapeutaDto>>(list);
         }
 
+        public async Task<(IEnumerable<TerapeutaDto> Items, int Total)> GetPagedAsync(int page, int pageSize, string? search, bool? activo)
+        {
+            var (items, total) = await _unitOfWork.Terapeutas.GetPagedAsync(page <= 0 ? 1 : page, pageSize <= 0 ? 10 : pageSize, search, activo);
+            return (_mapper.Map<IEnumerable<TerapeutaDto>>(items), total);
+        }
+
         public async Task<TerapeutaDto> GetByIdAsync(int id)
         {
             var entity = await _unitOfWork.Terapeutas.GetWithDetailsAsync(id);
