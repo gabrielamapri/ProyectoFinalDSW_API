@@ -57,9 +57,9 @@ namespace CentroTerapia.Application.Services;
 
         // determine duration
         int duration = dto.DuracionMinutos ?? 0;
-        if (duration <= 0 && dto.TerapiaId.HasValue)
+            if (duration <= 0 && dto.TipoSesionId.HasValue)
         {
-            var tipo = await _unitOfWork.TiposSesion.GetByIdAsync(dto.TerapiaId.Value);
+                var tipo = await _unitOfWork.TiposSesion.GetByIdAsync(dto.TipoSesionId.Value);
             if (tipo != null) duration = tipo.DuracionMinutos;
         }
         if (duration <= 0) duration = 60; // default
@@ -140,9 +140,9 @@ namespace CentroTerapia.Application.Services;
 
         // Determine new duration if provided
         int duration = dto.DuracionMinutos ?? Cita.DuracionMinutos;
-        if (duration <= 0 && dto.TerapiaId.HasValue)
+        if (duration <= 0 && dto.TipoSesionId.HasValue)
         {
-            var tipo = await _unitOfWork.TiposSesion.GetByIdAsync(dto.TerapiaId.Value);
+            var tipo = await _unitOfWork.TiposSesion.GetByIdAsync(dto.TipoSesionId.Value);
             if (tipo != null) duration = tipo.DuracionMinutos;
         }
         if (duration <= 0) duration = Cita.DuracionMinutos > 0 ? Cita.DuracionMinutos : 60;

@@ -20,11 +20,12 @@ namespace CentroTerapia.Application.Mappings
                 .ForMember(dest => dest.Apellidos, opt => opt.MapFrom(src => src.Apellidos))
                 .ForMember(dest => dest.FechaNacimiento, opt => opt.MapFrom(src => src.FechaNacimiento))
                 .ForMember(dest => dest.AgeInYears, opt => opt.MapFrom(src => src.CalcularEdad()))
+                .ForMember(dest => dest.DNI, opt => opt.MapFrom(src => src.DNI ?? string.Empty))
                 .ForMember(dest => dest.Sexo, opt => opt.MapFrom(src => src.Sexo))
                 .ForMember(dest => dest.NombreContactoEmergencia, opt => opt.MapFrom(src => src.NombreContactoEmergencia ?? string.Empty))
                 .ForMember(dest => dest.NumeroContactoEmergencia, opt => opt.MapFrom(src => src.NumeroContactoEmergencia ?? string.Empty))
                 .ForMember(dest => dest.FamiliaId, opt => opt.MapFrom(src => src.FamiliaId))
-                .ForMember(dest => dest.ResponsableNombre, opt => opt.MapFrom(src => src.Familia != null ? ((src.Familia.Responsable1Nombre ?? string.Empty) + " " + (src.Familia.Responsable1Apellido ?? string.Empty)) : string.Empty))
+                .ForMember(dest => dest.ResponsableNombre, opt => opt.MapFrom(src => src.Familia != null ? ((src.Familia.ResponsablePrincipalNombre ?? string.Empty) + " " + (src.Familia.ResponsablePrincipalApellido ?? string.Empty)) : string.Empty))
                 .ForMember(dest => dest.FechaCreacion, opt => opt.MapFrom(src => src.FechaCreacion));
 
             CreateMap<Terapeuta, TerapeutaDto>()
@@ -46,16 +47,10 @@ namespace CentroTerapia.Application.Mappings
                 .ForMember(dest => dest.FechaCreacion, opt => opt.MapFrom(src => src.FechaCreacion))
                 .ForMember(dest => dest.PacienteId, opt => opt.MapFrom(src => src.PacienteId))
                 .ForMember(dest => dest.PacienteNombre, opt => opt.MapFrom(src => src.Paciente != null ? (src.Paciente.Nombres + " " + src.Paciente.Apellidos) : string.Empty))
-                .ForMember(dest => dest.PuedeSerCancelada, opt => opt.MapFrom(src => src.CanBeCancelada()));
-
-            CreateMap<CreateCitaDto, Cita>()
-                .ForMember(dest => dest.Fecha, opt => opt.MapFrom(src => src.Fecha))
-                .ForMember(dest => dest.Motivo, opt => opt.MapFrom(src => src.Motivo))
-                .ForMember(dest => dest.PacienteId, opt => opt.MapFrom(src => src.PacienteId));
-
-            CreateMap<CreateCitaDto, Cita>()
+                .ForMember(dest => dest.PuedeSerCancelada, opt => opt.MapFrom(src => src.CanBeCancelada()))
+                .ForMember(dest => dest.TipoSesionId, opt => opt.MapFrom(src => src.TipoSesionId))
+                .ForMember(dest => dest.TipoSesionNombre, opt => opt.MapFrom(src => src.TipoSesion != null ? src.TipoSesion.Nombre : string.Empty))
                 .ForMember(dest => dest.TerapeutaId, opt => opt.MapFrom(src => src.TerapeutaId))
-                .ForMember(dest => dest.TerapiaId, opt => opt.MapFrom(src => src.TerapiaId))
                 .ForMember(dest => dest.DuracionMinutos, opt => opt.MapFrom(src => src.DuracionMinutos));
 
             CreateMap<CreatePacienteDto, Paciente>()
@@ -63,6 +58,7 @@ namespace CentroTerapia.Application.Mappings
                 .ForMember(dest => dest.Apellidos, opt => opt.MapFrom(src => src.Apellidos))
                 .ForMember(dest => dest.FechaNacimiento, opt => opt.MapFrom(src => src.FechaNacimiento))
                 .ForMember(dest => dest.FamiliaId, opt => opt.MapFrom(src => src.FamiliaId))
+                .ForMember(dest => dest.DNI, opt => opt.MapFrom(src => src.DNI))
                 .ForMember(dest => dest.Sexo, opt => opt.MapFrom(src => src.Sexo))
                 .ForMember(dest => dest.NombreContactoEmergencia, opt => opt.MapFrom(src => src.NombreContactoEmergencia))
                 .ForMember(dest => dest.NumeroContactoEmergencia, opt => opt.MapFrom(src => src.NumeroContactoEmergencia));
@@ -85,16 +81,19 @@ namespace CentroTerapia.Application.Mappings
                 .ForMember(dest => dest.Estado, opt => opt.MapFrom(src => src.Estado))
                 .ForMember(dest => dest.Notas, opt => opt.MapFrom(src => src.Notas))
                 .ForMember(dest => dest.TerapeutaId, opt => opt.MapFrom(src => src.TerapeutaId))
-                .ForMember(dest => dest.TerapiaId, opt => opt.MapFrom(src => src.TerapiaId))
+                .ForMember(dest => dest.TipoSesionId, opt => opt.MapFrom(src => src.TipoSesionId))
                 .ForMember(dest => dest.DuracionMinutos, opt => opt.MapFrom(src => src.DuracionMinutos))
                 .ForMember(dest => dest.FechaCreacion, opt => opt.Ignore());
 
             CreateMap<CreateCitaDto, Cita>()
+                .ForMember(dest => dest.Fecha, opt => opt.MapFrom(src => src.Fecha))
+                .ForMember(dest => dest.Motivo, opt => opt.MapFrom(src => src.Motivo))
+                .ForMember(dest => dest.PacienteId, opt => opt.MapFrom(src => src.PacienteId))
+                .ForMember(dest => dest.TerapeutaId, opt => opt.MapFrom(src => src.TerapeutaId))
+                .ForMember(dest => dest.TipoSesionId, opt => opt.MapFrom(src => src.TipoSesionId))
+                .ForMember(dest => dest.DuracionMinutos, opt => opt.MapFrom(src => src.DuracionMinutos))
                 .ForMember(dest => dest.Estado, opt => opt.MapFrom(src => "Scheduled"))
                 .ForMember(dest => dest.FechaCreacion, opt => opt.MapFrom(src => DateTime.Now));
-
-            CreateMap<UpdateCitaDto, Cita>()
-                .ForMember(dest => dest.FechaCreacion, opt => opt.Ignore());
 
             // Familia mappings
             CreateMap<Familia, CentroTerapia.Application.DTOs.Familia.FamiliaDto>()

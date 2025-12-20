@@ -7,17 +7,18 @@ namespace CentroTerapia.Application.Validators
     {
         public CreateFamiliaDtoValidator()
         {
-            RuleFor(x => x.Responsable1Nombre)
-                .MaximumLength(50).WithMessage("Responsable1Nombre no puede exceder 50 caracteres");
+            RuleFor(x => x.ResponsablePrincipalNombre)
+                .MaximumLength(50).WithMessage("ResponsablePrincipalNombre no puede exceder 50 caracteres");
 
-            RuleFor(x => x.Responsable1Apellido)
-                .MaximumLength(50).WithMessage("Responsable1Apellido no puede exceder 50 caracteres");
+            RuleFor(x => x.ResponsablePrincipalApellido)
+                .MaximumLength(50).WithMessage("ResponsablePrincipalApellido no puede exceder 50 caracteres");
 
-            RuleFor(x => x.Responsable1DNI)
-                .MaximumLength(20).WithMessage("Responsable1DNI no puede exceder 20 caracteres");
+            RuleFor(x => x.ResponsablePrincipalDNI)
+                .MaximumLength(20).WithMessage("ResponsablePrincipalDNI no puede exceder 20 caracteres");
 
-            RuleFor(x => x.Responsable1Email)
-                .EmailAddress().When(x => !string.IsNullOrEmpty(x.Responsable1Email)).WithMessage("Responsable1Email debe ser un email válido");
+            RuleFor(x => x.ResponsablePrincipalEmail)
+                .NotEmpty().WithMessage("ResponsablePrincipalEmail es requerido")
+                .EmailAddress().WithMessage("ResponsablePrincipalEmail debe ser un email válido");
 
             RuleFor(x => x.Responsable2Nombre)
                 .MaximumLength(50).WithMessage("Responsable2Nombre no puede exceder 50 caracteres");
@@ -28,8 +29,7 @@ namespace CentroTerapia.Application.Validators
             RuleFor(x => x.Responsable2DNI)
                 .MaximumLength(20).WithMessage("Responsable2DNI no puede exceder 20 caracteres");
 
-            RuleFor(x => x.Responsable2Email)
-                .EmailAddress().When(x => !string.IsNullOrEmpty(x.Responsable2Email)).WithMessage("Responsable2Email debe ser un email válido");
+            // Responsable2Email removed — no validation needed
 
             RuleFor(x => x.TelefonoContacto)
                 .MaximumLength(20).When(x => !string.IsNullOrEmpty(x.TelefonoContacto)).WithMessage("TelefonoContacto no puede exceder 20 caracteres");

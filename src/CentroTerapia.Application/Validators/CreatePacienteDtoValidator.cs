@@ -20,7 +20,11 @@ namespace CentroTerapia.Application.Validators
                 .LessThan(DateTime.Now).WithMessage("Fecha de nacimiento debe ser en el pasado");
 
             RuleFor(x => x.FamiliaId)
-                .GreaterThan(0).WithMessage("FamiliaId debe ser mayor que 0");
+                .GreaterThan(0).When(x => x.FamiliaId.HasValue).WithMessage("FamiliaId debe ser mayor que 0");
+
+            RuleFor(x => x.DNI)
+                .NotEmpty().WithMessage("DNI es requerido")
+                .MaximumLength(20).WithMessage("DNI no puede exceder 20 caracteres");
 
             RuleFor(x => x.Sexo)
                 .MaximumLength(20).WithMessage("Sexo no puede exceder 20 caracteres");
@@ -30,6 +34,13 @@ namespace CentroTerapia.Application.Validators
 
             RuleFor(x => x.NumeroContactoEmergencia)
                 .MaximumLength(30).WithMessage("Número de contacto no puede exceder 30 caracteres");
+
+            // If one emergency contact field is provided, require the other
+            RuleFor(x => x.NumeroContactoEmergencia)
+                .NotEmpty().When(x => !string.IsNullOrWhiteSpace(x.NombreContactoEmergencia)).WithMessage("Número de contacto de emergencia es requerido cuando se proporciona el nombre del contacto");
+
+            RuleFor(x => x.NombreContactoEmergencia)
+                .NotEmpty().When(x => !string.IsNullOrWhiteSpace(x.NumeroContactoEmergencia)).WithMessage("Nombre de contacto de emergencia es requerido cuando se proporciona el número de contacto");
         }
     }
 }

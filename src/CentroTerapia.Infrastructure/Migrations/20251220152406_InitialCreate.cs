@@ -41,19 +41,19 @@ namespace CentroTerapia.Infrastructure.Migrations
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
                     TelefonoContacto = table.Column<string>(type: "longtext", nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    Responsable1Nombre = table.Column<string>(type: "longtext", nullable: true)
+                    ResponsablePrincipalNombre = table.Column<string>(type: "longtext", nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    Responsable1Apellido = table.Column<string>(type: "longtext", nullable: true)
+                    ResponsablePrincipalApellido = table.Column<string>(type: "longtext", nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    Responsable1DNI = table.Column<string>(type: "longtext", nullable: true)
+                    ResponsablePrincipalDNI = table.Column<string>(type: "longtext", nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    Responsable1Direccion = table.Column<string>(type: "longtext", nullable: true)
+                    ResponsablePrincipalDireccion = table.Column<string>(type: "longtext", nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    Responsable1Email = table.Column<string>(type: "longtext", nullable: true)
+                    ResponsablePrincipalEmail = table.Column<string>(type: "longtext", nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    Responsable1Telefono = table.Column<string>(type: "longtext", nullable: true)
+                    ResponsablePrincipalTelefono = table.Column<string>(type: "longtext", nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    Responsable1Relacion = table.Column<string>(type: "longtext", nullable: true)
+                    ResponsablePrincipalRelacion = table.Column<string>(type: "longtext", nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     Responsable2Nombre = table.Column<string>(type: "longtext", nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
@@ -62,8 +62,6 @@ namespace CentroTerapia.Infrastructure.Migrations
                     Responsable2DNI = table.Column<string>(type: "longtext", nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     Responsable2Direccion = table.Column<string>(type: "longtext", nullable: true)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
-                    Responsable2Email = table.Column<string>(type: "longtext", nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     Responsable2Telefono = table.Column<string>(type: "longtext", nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
@@ -194,7 +192,9 @@ namespace CentroTerapia.Infrastructure.Migrations
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     NumeroContactoEmergencia = table.Column<string>(type: "longtext", nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    FamiliaId = table.Column<int>(type: "int", nullable: false)
+                    DNI = table.Column<string>(type: "longtext", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    FamiliaId = table.Column<int>(type: "int", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -204,7 +204,7 @@ namespace CentroTerapia.Infrastructure.Migrations
                         column: x => x.FamiliaId,
                         principalTable: "Familias",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.SetNull);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
 
@@ -249,7 +249,7 @@ namespace CentroTerapia.Infrastructure.Migrations
                     FechaCreacion = table.Column<DateTime>(type: "datetime(6)", nullable: false),
                     PacienteId = table.Column<int>(type: "int", nullable: false),
                     TerapeutaId = table.Column<int>(type: "int", nullable: true),
-                    TerapiaId = table.Column<int>(type: "int", nullable: true),
+                    TipoSesionId = table.Column<int>(type: "int", nullable: true),
                     DuracionMinutos = table.Column<int>(type: "int", nullable: false),
                     RowVersion = table.Column<byte[]>(type: "longblob", nullable: true)
                 },
@@ -268,8 +268,8 @@ namespace CentroTerapia.Infrastructure.Migrations
                         principalTable: "Terapeutas",
                         principalColumn: "Id");
                     table.ForeignKey(
-                        name: "FK_Citas_TiposSesion_TerapiaId",
-                        column: x => x.TerapiaId,
+                        name: "FK_Citas_TiposSesion_TipoSesionId",
+                        column: x => x.TipoSesionId,
                         principalTable: "TiposSesion",
                         principalColumn: "Id");
                 })
@@ -326,9 +326,9 @@ namespace CentroTerapia.Infrastructure.Migrations
                 column: "TerapeutaId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Citas_TerapiaId",
+                name: "IX_Citas_TipoSesionId",
                 table: "Citas",
-                column: "TerapiaId");
+                column: "TipoSesionId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_FranjasDisponibilidad_TerapeutaId",

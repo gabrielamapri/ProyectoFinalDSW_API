@@ -13,8 +13,10 @@
         public string NumeroContactoEmergencia { get; set; } = string.Empty;
         
 
-        public int FamiliaId { get; set; }
+        public int? FamiliaId { get; set; }
         public Familia? Familia { get; set; }
+
+        public string DNI { get; set; } = string.Empty;
 
         public ICollection<Cita> Citas { get; set; } = new List<Cita>();
 

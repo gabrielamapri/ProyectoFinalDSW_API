@@ -16,8 +16,8 @@
         public int? TerapeutaId { get; set; }
         public Terapeuta? Terapeuta { get; set; }
 
-        public int? TerapiaId { get; set; }
-        public TipoSesion? Terapia { get; set; }
+        public int? TipoSesionId { get; set; }
+        public TipoSesion? TipoSesion { get; set; }
 
         public int DuracionMinutos { get; set; }
 

@@ -90,6 +90,24 @@ namespace CentroTerapia.API.Controllers
             }
         }
 
+        [HttpPost("{id}/familia/{familiaId}")]
+        public async Task<ActionResult<PacienteDto>> AssignFamily(int id, int familiaId)
+        {
+            try
+            {
+                var paciente = await _pacienteService.AssignFamilyAsync(id, familiaId);
+                return Ok(paciente);
+            }
+            catch (NotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (BusinessRuleException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         [HttpDelete("{id}")]
         public async Task<ActionResult> Delete(int id)
         {

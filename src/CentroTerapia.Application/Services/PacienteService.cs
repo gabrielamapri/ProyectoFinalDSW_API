@@ -23,11 +23,32 @@ namespace CentroTerapia.Application.Services
 
         public async Task<PacienteDto> CreateAsync(CreatePacienteDto dto)
         {
+            if (dto.FamiliaId.HasValue)
+            {
+                var famExists = await _unitOfWork.Familias.ExistsAsync(dto.FamiliaId.Value);
+                if (!famExists) throw new NotFoundException("Familia", dto.FamiliaId.Value);
+            }
+
             var paciente = _mapper.Map<Paciente>(dto);
             var created = await _unitOfWork.Pacientes.CreateAsync(paciente);
             await _unitOfWork.SaveChangesAsync();
             var withDetails = await _unitOfWork.Pacientes.GetWithFamiliaAndCitasAsync(created.Id);
             return _mapper.Map<PacienteDto>(withDetails ?? created);
+        }
+
+        public async Task<PacienteDto> AssignFamilyAsync(int pacienteId, int familiaId)
+        {
+            var paciente = await _unitOfWork.Pacientes.GetByIdAsync(pacienteId);
+            if (paciente == null) throw new NotFoundException("Paciente", pacienteId);
+
+            var famExists = await _unitOfWork.Familias.ExistsAsync(familiaId);
+            if (!famExists) throw new NotFoundException("Familia", familiaId);
+
+            paciente.FamiliaId = familiaId;
+            var updated = await _unitOfWork.Pacientes.UpdateAsync(paciente);
+            await _unitOfWork.SaveChangesAsync();
+            var withDetails = await _unitOfWork.Pacientes.GetWithFamiliaAndCitasAsync(updated.Id);
+            return _mapper.Map<PacienteDto>(withDetails ?? updated);
         }
 
         public async Task<bool> DeleteAsync(int id)

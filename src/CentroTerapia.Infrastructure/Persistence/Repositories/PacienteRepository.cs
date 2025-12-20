@@ -14,7 +14,7 @@ namespace CentroTerapia.Infrastructure.Persistence.Repositories
         public async Task<IEnumerable<Paciente>> GetByFamiliaIdAsync(int familiaId)
         {
             return await _dbSet
-                .Where(p => EF.Property<int>(p, "FamiliaId") == familiaId)
+                .Where(p => p.FamiliaId.HasValue && p.FamiliaId.Value == familiaId)
                 .Include(p => p.Familia)
                 .ToListAsync();
         }

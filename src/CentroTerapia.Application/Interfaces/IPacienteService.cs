@@ -11,5 +11,6 @@ namespace CentroTerapia.Application.Interfaces
         Task<PacienteDto> UpdateAsync(int id, UpdatePacienteDto dto);
         Task<bool> DeleteAsync(int id);
         Task<IEnumerable<PacienteDto>> GetByFamiliaIdAsync(int familiaId);
+        Task<PacienteDto> AssignFamilyAsync(int pacienteId, int familiaId);
     }
 }

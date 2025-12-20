@@ -11,6 +11,10 @@
         public int PacienteId { get; set; }
         public string PacienteNombre { get; set; } = string.Empty;
         public bool PuedeSerCancelada { get; set; }
+        public int? TipoSesionId { get; set; }
+        public string TipoSesionNombre { get; set; } = string.Empty;
+        public int? TerapeutaId { get; set; }
+        public int DuracionMinutos { get; set; }
     }
 }
 

@@ -65,7 +65,7 @@ namespace CentroTerapia.Infrastructure.Migrations
                     b.Property<int?>("TerapeutaId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("TerapiaId")
+                    b.Property<int?>("TipoSesionId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
@@ -78,7 +78,7 @@ namespace CentroTerapia.Infrastructure.Migrations
 
                     b.HasIndex("TerapeutaId");
 
-                    b.HasIndex("TerapiaId");
+                    b.HasIndex("TipoSesionId");
 
                     b.ToTable("Citas", (string)null);
                 });
@@ -120,25 +120,25 @@ namespace CentroTerapia.Infrastructure.Migrations
                     b.Property<DateTime>("FechaCreacion")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<string>("Responsable1Apellido")
+                    b.Property<string>("ResponsablePrincipalApellido")
                         .HasColumnType("longtext");
 
-                    b.Property<string>("Responsable1DNI")
+                    b.Property<string>("ResponsablePrincipalDNI")
                         .HasColumnType("longtext");
 
-                    b.Property<string>("Responsable1Direccion")
+                    b.Property<string>("ResponsablePrincipalDireccion")
                         .HasColumnType("longtext");
 
-                    b.Property<string>("Responsable1Email")
+                    b.Property<string>("ResponsablePrincipalEmail")
                         .HasColumnType("longtext");
 
-                    b.Property<string>("Responsable1Nombre")
+                    b.Property<string>("ResponsablePrincipalNombre")
                         .HasColumnType("longtext");
 
-                    b.Property<string>("Responsable1Relacion")
+                    b.Property<string>("ResponsablePrincipalRelacion")
                         .HasColumnType("longtext");
 
-                    b.Property<string>("Responsable1Telefono")
+                    b.Property<string>("ResponsablePrincipalTelefono")
                         .HasColumnType("longtext");
 
                     b.Property<string>("Responsable2Apellido")
@@ -148,9 +148,6 @@ namespace CentroTerapia.Infrastructure.Migrations
                         .HasColumnType("longtext");
 
                     b.Property<string>("Responsable2Direccion")
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("Responsable2Email")
                         .HasColumnType("longtext");
 
                     b.Property<string>("Responsable2Nombre")
@@ -245,8 +242,12 @@ namespace CentroTerapia.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<int>("FamiliaId")
+                    b.Property<int?>("FamiliaId")
                         .HasColumnType("int");
+
+                    b.Property<string>("DNI")
+                        .IsRequired()
+                        .HasColumnType("longtext");
 
                     b.Property<DateTime>("FechaCreacion")
                         .HasColumnType("datetime(6)");
@@ -442,15 +443,15 @@ namespace CentroTerapia.Infrastructure.Migrations
                         .WithMany("Citas")
                         .HasForeignKey("TerapeutaId");
 
-                    b.HasOne("CentroTerapia.Domain.Entities.TipoSesion", "Terapia")
+                    b.HasOne("CentroTerapia.Domain.Entities.TipoSesion", "TipoSesion")
                         .WithMany()
-                        .HasForeignKey("TerapiaId");
+                        .HasForeignKey("TipoSesionId");
 
                     b.Navigation("Paciente");
 
                     b.Navigation("Terapeuta");
 
-                    b.Navigation("Terapia");
+                    b.Navigation("TipoSesion");
                 });
 
             modelBuilder.Entity("CentroTerapia.Domain.Entities.FranjaDisponibilidad", b =>
@@ -488,8 +489,7 @@ namespace CentroTerapia.Infrastructure.Migrations
                     b.HasOne("CentroTerapia.Domain.Entities.Familia", "Familia")
                         .WithMany("Pacientes")
                         .HasForeignKey("FamiliaId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Familia");
                 });

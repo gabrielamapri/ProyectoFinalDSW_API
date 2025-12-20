@@ -6,7 +6,7 @@
         public string Motivo { get; set; } = string.Empty;
         public int PacienteId { get; set; }
         public int? TerapeutaId { get; set; }
-        public int? TerapiaId { get; set; }
+        public int? TipoSesionId { get; set; }
         public int? DuracionMinutos { get; set; }
     }
 }

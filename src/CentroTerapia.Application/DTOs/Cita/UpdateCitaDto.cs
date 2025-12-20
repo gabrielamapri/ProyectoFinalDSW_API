@@ -7,7 +7,7 @@
         public string Estado { get; set; } = string.Empty;
         public string Notas { get; set; } = string.Empty;
         public int? TerapeutaId { get; set; }
-        public int? TerapiaId { get; set; }
+        public int? TipoSesionId { get; set; }
         public int? DuracionMinutos { get; set; }
     }
 }
