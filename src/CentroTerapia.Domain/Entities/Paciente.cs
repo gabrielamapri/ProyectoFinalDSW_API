@@ -6,7 +6,7 @@
         public string Nombres { get; set; } = string.Empty;
         public string Apellidos { get; set; } = string.Empty;
         public DateTime FechaNacimiento { get; set; }
-        public CentroTerapia.Domain.Enums.Sexo Sexo { get; set; } = CentroTerapia.Domain.Enums.Sexo.Desconocido;
+        public CentroTerapia.Domain.Enums.Sexo Sexo { get; set; } = CentroTerapia.Domain.Enums.Sexo.Masculino;
         public DateTime FechaCreacion { get; set; } = DateTime.Now;
 
         public string NombreContactoEmergencia { get; set; } = string.Empty;

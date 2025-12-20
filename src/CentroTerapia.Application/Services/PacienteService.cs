@@ -50,7 +50,10 @@ namespace CentroTerapia.Application.Services
             CentroTerapia.Domain.Enums.Sexo? sexoEnum = null;
             if (!string.IsNullOrWhiteSpace(sexo))
             {
-                if (Enum.TryParse<CentroTerapia.Domain.Enums.Sexo>(sexo, true, out var parsed)) sexoEnum = parsed;
+                var s = sexo.Trim().ToLower();
+                if (s == "m" || s == "masculino") sexoEnum = CentroTerapia.Domain.Enums.Sexo.Masculino;
+                else if (s == "f" || s == "femenino") sexoEnum = CentroTerapia.Domain.Enums.Sexo.Femenino;
+                else if (int.TryParse(s, out var iv) && Enum.IsDefined(typeof(CentroTerapia.Domain.Enums.Sexo), iv)) sexoEnum = (CentroTerapia.Domain.Enums.Sexo)iv;
             }
 
             var (items, total) = await _unitOfWork.Pacientes.GetPagedAsync(page <= 0 ? 1 : page, pageSize <=0 ? 10 : pageSize, search, sexoEnum);
