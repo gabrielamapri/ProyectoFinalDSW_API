@@ -29,7 +29,7 @@ namespace CentroTerapia.API.Controllers
             if (q.ContainsKey("activo") && bool.TryParse(q["activo"], out var a)) activo = a;
 
             var (items, total) = await _service.GetPagedAsync(page, pageSize, search, activo);
-            Response.Headers.Add("X-Total-Count", total.ToString());
+            Response.Headers.Append("X-Total-Count", total.ToString());
             return Ok(items);
         }
 

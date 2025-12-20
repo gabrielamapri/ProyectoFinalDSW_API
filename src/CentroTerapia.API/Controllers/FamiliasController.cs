@@ -30,7 +30,7 @@ namespace CentroTerapia.API.Controllers
             var search = q.ContainsKey("search") ? q["search"].ToString() : null;
 
             var (items, total) = await _service.GetPagedAsync(page, pageSize, search);
-            Response.Headers.Add("X-Total-Count", total.ToString());
+            Response.Headers.Append("X-Total-Count", total.ToString());
             return Ok(items);
         }
 

@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace CentroTerapia.Infrastructure.src.CentroTerapia.Infrastructure.Migrations
+namespace CentroTerapia.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
     [Migration("20251220152406_InitialCreate")]

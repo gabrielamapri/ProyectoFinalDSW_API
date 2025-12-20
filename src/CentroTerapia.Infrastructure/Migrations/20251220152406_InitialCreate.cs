@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace CentroTerapia.Infrastructure.src.CentroTerapia.Infrastructure.Migrations
+namespace CentroTerapia.Infrastructure.Migrations
 {
     /// <inheritdoc />
     public partial class InitialCreate : Migration
