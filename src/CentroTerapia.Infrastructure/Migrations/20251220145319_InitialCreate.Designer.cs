@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CentroTerapia.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20251220002727_InitialCreate")]
+    [Migration("20251220145319_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -180,6 +180,36 @@ namespace CentroTerapia.Infrastructure.Migrations
                     b.ToTable("FranjaDisponibilidad");
                 });
 
+            modelBuilder.Entity("CentroTerapia.Domain.Entities.NotaSesion", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CitaId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("FechaCreacion")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Notas")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("TerapeutaId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CitaId");
+
+                    b.HasIndex("TerapeutaId");
+
+                    b.ToTable("NotaSesion", (string)null);
+                });
+
             modelBuilder.Entity("CentroTerapia.Domain.Entities.Paciente", b =>
                 {
                     b.Property<int>("Id")
@@ -261,9 +291,6 @@ namespace CentroTerapia.Infrastructure.Migrations
                     b.Property<string>("Telefono")
                         .IsRequired()
                         .HasColumnType("longtext");
-
-                    b.Property<int?>("TerapeutaId")
-                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -373,6 +400,25 @@ namespace CentroTerapia.Infrastructure.Migrations
                         .HasForeignKey("TerapeutaId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Terapeuta");
+                });
+
+            modelBuilder.Entity("CentroTerapia.Domain.Entities.NotaSesion", b =>
+                {
+                    b.HasOne("CentroTerapia.Domain.Entities.Cita", "Cita")
+                        .WithMany()
+                        .HasForeignKey("CitaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CentroTerapia.Domain.Entities.Terapeuta", "Terapeuta")
+                        .WithMany()
+                        .HasForeignKey("TerapeutaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Cita");
 
                     b.Navigation("Terapeuta");
                 });

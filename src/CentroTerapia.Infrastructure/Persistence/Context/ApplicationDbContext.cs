@@ -14,6 +14,9 @@ namespace CentroTerapia.Infrastructure.Persistence.Context
         public DbSet<Cita> Citas { get; set; }
         public DbSet<User> Users { get; set; }
         public DbSet<NotaSesion> NotasSesion { get; set; }
+        public DbSet<Especialidad> Especialidades { get; set; }
+        public DbSet<Terapeuta> Terapeutas { get; set; }
+        public DbSet<Paciente> Pacientes { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -23,6 +26,25 @@ namespace CentroTerapia.Infrastructure.Persistence.Context
             modelBuilder.ApplyConfiguration(new CitaConfiguration());
             modelBuilder.ApplyConfiguration(new UserConfiguration());
             modelBuilder.ApplyConfiguration(new NotaSesionConfiguration());
+
+            // Apply default conventions for new entities
+            modelBuilder.Entity<Especialidad>(eb =>
+            {
+                eb.Property(e => e.Nombre).IsRequired();
+            });
+
+            modelBuilder.Entity<Terapeuta>(tb =>
+            {
+                tb.HasOne(t => t.Especialidad)
+                  .WithMany(e => e.Terapeutas)
+                  .HasForeignKey(t => t.EspecialidadId)
+                  .OnDelete(DeleteBehavior.SetNull);
+            });
+
+            modelBuilder.Entity<Paciente>(pb =>
+            {
+                pb.Property(p => p.Sexo).HasConversion<int>();
+            });
         }
     }
 }

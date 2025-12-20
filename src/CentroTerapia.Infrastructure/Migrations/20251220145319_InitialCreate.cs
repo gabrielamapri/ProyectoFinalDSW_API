@@ -87,7 +87,6 @@ namespace CentroTerapia.Infrastructure.Migrations
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
 
-
             migrationBuilder.CreateTable(
                 name: "TipoSesion",
                 columns: table => new
@@ -231,6 +230,36 @@ namespace CentroTerapia.Infrastructure.Migrations
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
 
+            migrationBuilder.CreateTable(
+                name: "NotaSesion",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    CitaId = table.Column<int>(type: "int", nullable: false),
+                    TerapeutaId = table.Column<int>(type: "int", nullable: false),
+                    Notas = table.Column<string>(type: "longtext", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    FechaCreacion = table.Column<DateTime>(type: "datetime(6)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_NotaSesion", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_NotaSesion_Citas_CitaId",
+                        column: x => x.CitaId,
+                        principalTable: "Citas",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_NotaSesion_Terapeuta_TerapeutaId",
+                        column: x => x.TerapeutaId,
+                        principalTable: "Terapeuta",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                })
+                .Annotation("MySql:CharSet", "utf8mb4");
+
             migrationBuilder.CreateIndex(
                 name: "IX_Citas_Estado",
                 table: "Citas",
@@ -256,45 +285,10 @@ namespace CentroTerapia.Infrastructure.Migrations
                 table: "Citas",
                 column: "TerapiaId");
 
-            migrationBuilder.CreateTable(
-                name: "NotaSesion",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    CitaId = table.Column<int>(type: "int", nullable: false),
-                    TerapeutaId = table.Column<int>(type: "int", nullable: false),
-                    Notas = table.Column<string>(type: "longtext", nullable: true)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
-                    FechaCreacion = table.Column<DateTime>(type: "datetime(6)", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_NotaSesion", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_NotaSesion_Citas_CitaId",
-                        column: x => x.CitaId,
-                        principalTable: "Citas",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_NotaSesion_Terapeuta_TerapeutaId",
-                        column: x => x.TerapeutaId,
-                        principalTable: "Terapeuta",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                })
-                .Annotation("MySql:CharSet", "utf8mb4");
-
             migrationBuilder.CreateIndex(
                 name: "IX_FranjaDisponibilidad_TerapeutaId",
                 table: "FranjaDisponibilidad",
                 column: "TerapeutaId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Paciente_FamiliaId",
-                table: "Paciente",
-                column: "FamiliaId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_NotaSesion_CitaId",
@@ -307,6 +301,11 @@ namespace CentroTerapia.Infrastructure.Migrations
                 column: "TerapeutaId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Paciente_FamiliaId",
+                table: "Paciente",
+                column: "FamiliaId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Users_Correo",
                 table: "Users",
                 column: "Correo",
@@ -317,25 +316,25 @@ namespace CentroTerapia.Infrastructure.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "NotaSesion");
-
-            migrationBuilder.DropTable(
-                name: "Citas");
-
-            migrationBuilder.DropTable(
                 name: "FranjaDisponibilidad");
+
+            migrationBuilder.DropTable(
+                name: "NotaSesion");
 
             migrationBuilder.DropTable(
                 name: "Users");
 
             migrationBuilder.DropTable(
+                name: "Citas");
+
+            migrationBuilder.DropTable(
                 name: "Paciente");
 
             migrationBuilder.DropTable(
-                name: "TipoSesion");
+                name: "Terapeuta");
 
             migrationBuilder.DropTable(
-                name: "Terapeuta");
+                name: "TipoSesion");
 
             migrationBuilder.DropTable(
                 name: "Familia");
