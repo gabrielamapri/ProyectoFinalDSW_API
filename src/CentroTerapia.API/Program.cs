@@ -42,7 +42,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Configurar CORS
 
 var allowOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
- ?? new [] { "http://localhost:5173", "https://localhost:7057", "http://localhost:5291" }; // Valor por defecto si no se encuentra en la configuración
+ ?? new [] { "http://localhost:5173", "https://localhost:7057", "http://localhost:5291", "https://localhost:5001", "http://localhost:5000" }; // Valor por defecto si no se encuentra en la configuración
 
 builder.Services.AddCors(options =>
 {
@@ -119,9 +119,45 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+// Only enforce HTTPS redirection outside Development so local HTTP (swagger) works when developing
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+
+// Development-only: ensure seeded admin has a known password for testing (resets to "123")
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        if (app.Environment.IsDevelopment())
+        {
+            var uow = services.GetRequiredService<CentroTerapia.Domain.Ports.Out.IUnitOfWork>();
+            var logger = services.GetRequiredService<ILogger<Program>>();
+            var admin = uow.Users.GetByEmailAsync("admin@centro.local").GetAwaiter().GetResult();
+            if (admin != null)
+            {
+                admin.HashContrasena = BCrypt.Net.BCrypt.HashPassword("123");
+                uow.Users.UpdateAsync(admin).GetAwaiter().GetResult();
+                uow.SaveChangesAsync().GetAwaiter().GetResult();
+                logger.LogInformation("Admin password reset to '123' in Development environment.");
+            }
+            else
+            {
+                logger.LogWarning("Admin user not found when attempting to reset password.");
+            }
+        }
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetService<ILogger<Program>>();
+        logger?.LogError(ex, "Error while attempting to reset admin password");
+    }
+}
 
 app.Run();
