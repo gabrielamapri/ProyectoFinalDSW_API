@@ -1,0 +1,21 @@
+{
+  "dotnet.defaultSolution": "CentroTerapia.sln",
+  "CSharp.format.enable": true,
+  "CSharp.referencesCodeLens.enabled": true,
+  "CSharp.rename.enable": true,
+  "CSharp.suppressHiddenDiagnostics": false,
+  "files.exclude": {
+    "**/.git": true,
+    "**/.svn": true,
+    "**/.DS_Store": true
+  },
+  "search.exclude": {
+    "**/.git": true,
+    "**/bin": true,
+    "**/obj": true
+  },
+  "files.associations": {
+    "*.cs": "csharp",
+    "*.cshtml": "razor"
+  }
+}

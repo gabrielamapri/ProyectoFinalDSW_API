@@ -1,0 +1,16 @@
+﻿namespace CentroTerapia.Application.DTOs.Cita
+{
+    public class CitaDto
+    {
+        public int Id { get; set; }
+        public DateTime Fecha { get; set; }
+        public string Motivo { get; set; } = string.Empty;
+        public string Estado { get; set; } = string.Empty;
+        public string Notas { get; set; } = string.Empty;
+        public DateTime FechaCreacion { get; set; }
+        public int PacienteId { get; set; }
+        public string PacienteNombre { get; set; } = string.Empty;
+        public bool PuedeSerCancelada { get; set; }
+    }
+}
+
