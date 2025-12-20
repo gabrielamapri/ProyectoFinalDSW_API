@@ -15,8 +15,8 @@ namespace CentroTerapia.Application.Validators
                 .NotEmpty().WithMessage("Apellidos es requerido")
                 .MaximumLength(100);
 
-            RuleFor(x => x.Especialidades)
-                .MaximumLength(200);
+            RuleFor(x => x.EspecialidadId)
+                .GreaterThanOrEqualTo(0).When(x => x.EspecialidadId.HasValue);
 
             RuleFor(x => x.Presentacion)
                 .MaximumLength(1000).WithMessage("Presentación no debe exceder 1000 caracteres");

@@ -30,7 +30,8 @@ namespace CentroTerapia.Application.Mappings
             CreateMap<Terapeuta, TerapeutaDto>()
                 .ForMember(dest => dest.Nombres, opt => opt.MapFrom(src => src.Nombres))
                 .ForMember(dest => dest.Apellidos, opt => opt.MapFrom(src => src.Apellidos))
-                .ForMember(dest => dest.Especialidades, opt => opt.MapFrom(src => src.Especialidades))
+                .ForMember(dest => dest.EspecialidadId, opt => opt.MapFrom(src => src.EspecialidadId))
+                .ForMember(dest => dest.EspecialidadNombre, opt => opt.MapFrom(src => src.Especialidad != null ? src.Especialidad.Nombre : string.Empty))
                 .ForMember(dest => dest.Presentacion, opt => opt.MapFrom(src => src.Presentacion ?? string.Empty))
                 .ForMember(dest => dest.Telefono, opt => opt.MapFrom(src => src.Telefono ?? string.Empty))
                 .ForMember(dest => dest.Direccion, opt => opt.MapFrom(src => src.Direccion ?? string.Empty))
@@ -69,7 +70,7 @@ namespace CentroTerapia.Application.Mappings
             CreateMap<CreateTerapeutaDto, Terapeuta>()
                 .ForMember(dest => dest.Nombres, opt => opt.MapFrom(src => src.Nombres))
                 .ForMember(dest => dest.Apellidos, opt => opt.MapFrom(src => src.Apellidos))
-                .ForMember(dest => dest.Especialidades, opt => opt.MapFrom(src => src.Especialidades))
+                .ForMember(dest => dest.EspecialidadId, opt => opt.MapFrom(src => src.EspecialidadId))
                 .ForMember(dest => dest.Presentacion, opt => opt.MapFrom(src => src.Presentacion))
                 .ForMember(dest => dest.Telefono, opt => opt.MapFrom(src => src.Telefono))
                 .ForMember(dest => dest.Direccion, opt => opt.MapFrom(src => src.Direccion));
