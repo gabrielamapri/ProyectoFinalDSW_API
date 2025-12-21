@@ -118,6 +118,16 @@ namespace CentroTerapia.Application.Mappings
             CreateMap<CentroTerapia.Application.DTOs.Familia.CreateFamiliaDto, Familia>()
                 .ForMember(dest => dest.FechaCreacion, opt => opt.MapFrom(src => DateTime.Now));
 
+            // Franjas (Disponibilidad) mapping
+            CreateMap<FranjaDisponibilidad, CentroTerapia.Application.DTOs.Franja.FranjaDisponibilidadDto>()
+                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
+                .ForMember(dest => dest.TerapeutaId, opt => opt.MapFrom(src => src.TerapeutaId))
+                .ForMember(dest => dest.Fecha, opt => opt.MapFrom(src => src.Fecha))
+                .ForMember(dest => dest.DiaSemana, opt => opt.MapFrom(src => src.DiaSemana))
+                .ForMember(dest => dest.HoraInicio, opt => opt.MapFrom(src => src.HoraInicio))
+                .ForMember(dest => dest.HoraFin, opt => opt.MapFrom(src => src.HoraFin))
+                .ForMember(dest => dest.Recurrente, opt => opt.MapFrom(src => src.Recurrente));
+
         }
     }
 }
