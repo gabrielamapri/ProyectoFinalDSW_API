@@ -33,13 +33,20 @@ namespace CentroTerapia.Infrastructure.Persistence.Repositories
             if (!string.IsNullOrWhiteSpace(search))
             {
                 var s = search.Trim().ToLower();
-                query = query.Where(t => t.Nombres.ToLower().Contains(s) || t.Apellidos.ToLower().Contains(s));
+                // allow searching by nombres, apellidos or especialidad.nombre
+                query = query.Where(t =>
+                    t.Nombres.ToLower().Contains(s)
+                    || t.Apellidos.ToLower().Contains(s)
+                    || (t.Especialidad != null && t.Especialidad.Nombre.ToLower().Contains(s))
+                );
             }
             if (activo.HasValue)
             {
                 query = query.Where(t => t.Activo == activo.Value);
             }
 
+            // include Especialidad to ensure provider can translate navigation in filters and projection
+            query = query.Include(t => t.Especialidad);
             var total = await query.CountAsync();
             var items = await query
                 .Include(t => t.Especialidad)
