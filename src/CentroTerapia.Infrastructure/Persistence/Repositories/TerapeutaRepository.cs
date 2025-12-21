@@ -13,7 +13,9 @@ namespace CentroTerapia.Infrastructure.Persistence.Repositories
 
         public async Task<IEnumerable<Terapeuta>> GetByActivoAsync(bool activo)
         {
-            return await _dbSet.Where(t => EF.Property<bool>(t, "Activo") == activo).ToListAsync();
+            return await _dbSet.Where(t => EF.Property<bool>(t, "Activo") == activo)
+                .Include(t => t.Especialidad)
+                .ToListAsync();
         }
 
         public async Task<Terapeuta?> GetWithDetailsAsync(int id)
@@ -21,6 +23,7 @@ namespace CentroTerapia.Infrastructure.Persistence.Repositories
             return await _dbSet
                 .Include(t => t.Franjas)
                 .Include(t => t.Citas)
+                .Include(t => t.Especialidad)
                 .FirstOrDefaultAsync(t => EF.Property<int>(t, "Id") == id);
         }
 
@@ -38,7 +41,11 @@ namespace CentroTerapia.Infrastructure.Persistence.Repositories
             }
 
             var total = await query.CountAsync();
-            var items = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+            var items = await query
+                .Include(t => t.Especialidad)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
             return (items, total);
         }
     }
