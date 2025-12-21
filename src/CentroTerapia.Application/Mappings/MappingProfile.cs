@@ -95,6 +95,22 @@ namespace CentroTerapia.Application.Mappings
                 .ForMember(dest => dest.Estado, opt => opt.MapFrom(src => "Scheduled"))
                 .ForMember(dest => dest.FechaCreacion, opt => opt.MapFrom(src => DateTime.Now));
 
+            // TipoSesion mappings
+            CreateMap<CentroTerapia.Domain.Entities.TipoSesion, CentroTerapia.Application.DTOs.Terapia.TipoSesionDto>()
+                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
+                .ForMember(dest => dest.Nombre, opt => opt.MapFrom(src => src.Nombre))
+                .ForMember(dest => dest.DuracionMinutos, opt => opt.MapFrom(src => src.DuracionMinutos))
+                .ForMember(dest => dest.Precio, opt => opt.MapFrom(src => src.Precio))
+                .ForMember(dest => dest.Descripcion, opt => opt.MapFrom(src => src.Descripcion ?? string.Empty));
+
+            CreateMap<CentroTerapia.Application.DTOs.Terapia.CreateTipoSesionDto, CentroTerapia.Domain.Entities.TipoSesion>()
+                .ForMember(dest => dest.Nombre, opt => opt.MapFrom(src => src.Nombre))
+                .ForMember(dest => dest.DuracionMinutos, opt => opt.MapFrom(src => src.DuracionMinutos))
+                .ForMember(dest => dest.Precio, opt => opt.MapFrom(src => src.Precio))
+                .ForMember(dest => dest.Descripcion, opt => opt.MapFrom(src => src.Descripcion));
+
+            CreateMap<CentroTerapia.Application.DTOs.Terapia.UpdateTipoSesionDto, CentroTerapia.Domain.Entities.TipoSesion>();
+
             // Familia mappings
             CreateMap<Familia, CentroTerapia.Application.DTOs.Familia.FamiliaDto>()
                 .ForMember(dest => dest.Pacientes, opt => opt.MapFrom(src => src.Pacientes));
