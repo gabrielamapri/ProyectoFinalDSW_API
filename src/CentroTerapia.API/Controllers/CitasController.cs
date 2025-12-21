@@ -9,7 +9,6 @@ namespace CentroTerapia.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize]
     public class CitasController : ControllerBase
     {
         private readonly ICitaService _appointmentService;
@@ -21,6 +20,7 @@ namespace CentroTerapia.API.Controllers
             _mapper = mapper;
         }
 
+        [AllowAnonymous]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<CitaDto>>> GetAll()
         {
@@ -29,6 +29,7 @@ namespace CentroTerapia.API.Controllers
             return Ok(citas);
         }
 
+        [AllowAnonymous]
         [HttpGet("{id}")]
         public async Task<ActionResult<CitaDto>> GetById(int id)
         {
@@ -37,6 +38,7 @@ namespace CentroTerapia.API.Controllers
             return Ok(cita);
         }
 
+        [AllowAnonymous]
         [HttpGet("paciente/{pacienteId}")]
         public async Task<ActionResult<IEnumerable<CitaDto>>> GetByPacienteId(int pacienteId)
         {
@@ -52,6 +54,7 @@ namespace CentroTerapia.API.Controllers
             }
         }
 
+        [AllowAnonymous]
         [HttpGet("status/{estado}")]
         public async Task<ActionResult<IEnumerable<CitaDto>>> GetByEstado(string estado)
         {
@@ -67,6 +70,7 @@ namespace CentroTerapia.API.Controllers
             }
         }
 
+        [AllowAnonymous]
         [HttpGet("rango-fechas")]
         public async Task<ActionResult<IEnumerable<CitaDto>>> GetByFechaRango([FromQuery] DateTime inicio, [FromQuery] DateTime fin)
         {

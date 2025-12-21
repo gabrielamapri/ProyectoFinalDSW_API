@@ -20,7 +20,7 @@ namespace CentroTerapia.API.Controllers
         {
             var items = await _db.Especialidades
                 .AsNoTracking()
-                .Select(e => new { e.Id, e.Nombre })
+                .Select(e => new { e.Id, e.Nombre, e.Descripcion })
                 .ToListAsync();
             return Ok(items);
         }

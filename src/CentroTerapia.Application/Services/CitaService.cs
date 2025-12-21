@@ -38,7 +38,8 @@ namespace CentroTerapia.Application.Services;
     public async Task<IEnumerable<CitaDto>> GetAllAsync()
     {
         _logger.LogInformation("Retrieving all Citas.");
-        var Citas = await _unitOfWork.Citas.GetAllAsync();
+        // use repository method that includes related entities so mapping fills names
+        var Citas = await _unitOfWork.Citas.GetAllWithRelationsAsync();
         _logger.LogInformation("{Count} Citas retrieved.", Citas.Count());
         return _mapper.Map<IEnumerable<CitaDto>>(Citas);
     }
