@@ -1,3 +1,4 @@
+using System;
 using AutoMapper;
 using Microsoft.Extensions.Logging;
 using CentroTerapia.Application.DTOs.Familia;
@@ -63,6 +64,8 @@ namespace CentroTerapia.Application.Services
             var familia = await _unitOfWork.Familias.GetByIdAsync(id);
             if (familia == null) throw new NotFoundException("Familia", id);
             _mapper.Map(dto, familia);
+            // Actualizar timestamp de modificación
+            familia.FechaActualizacion = DateTime.UtcNow;
             var updated = await _unitOfWork.Familias.UpdateAsync(familia);
             await _unitOfWork.SaveChangesAsync();
             var withDetails = await _unitOfWork.Familias.GetWithPacientesAsync(updated.Id);

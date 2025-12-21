@@ -49,6 +49,7 @@ namespace CentroTerapia.Infrastructure.Persistence.Repositories
             {
                 return false;
             }
+            _dbSet.Remove(entity);
             return true;
         }
 
