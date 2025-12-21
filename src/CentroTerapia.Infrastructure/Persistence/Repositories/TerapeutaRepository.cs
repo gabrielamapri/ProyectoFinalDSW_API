@@ -27,7 +27,7 @@ namespace CentroTerapia.Infrastructure.Persistence.Repositories
                 .FirstOrDefaultAsync(t => EF.Property<int>(t, "Id") == id);
         }
 
-        public async Task<(IEnumerable<Terapeuta> Items, int Total)> GetPagedAsync(int page, int pageSize, string? search, bool? activo)
+        public async Task<(IEnumerable<Terapeuta> Items, int Total)> GetPagedAsync(int page, int pageSize, string? search, bool? activo, int? especialidadId = null)
         {
             var query = _dbSet.AsQueryable();
             if (!string.IsNullOrWhiteSpace(search))
@@ -43,6 +43,11 @@ namespace CentroTerapia.Infrastructure.Persistence.Repositories
             if (activo.HasValue)
             {
                 query = query.Where(t => t.Activo == activo.Value);
+            }
+
+            if (especialidadId.HasValue)
+            {
+                query = query.Where(t => t.EspecialidadId == especialidadId.Value);
             }
 
             // include Especialidad to ensure provider can translate navigation in filters and projection

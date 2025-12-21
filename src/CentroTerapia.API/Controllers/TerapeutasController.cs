@@ -28,7 +28,9 @@ namespace CentroTerapia.API.Controllers
             bool? activo = null;
             if (q.ContainsKey("activo") && bool.TryParse(q["activo"], out var a)) activo = a;
 
-            var (items, total) = await _service.GetPagedAsync(page, pageSize, search, activo);
+            int? especialidadId = null;
+            if (q.ContainsKey("especialidadId") && int.TryParse(q["especialidadId"].ToString(), out var eid)) especialidadId = eid;
+            var (items, total) = await _service.GetPagedAsync(page, pageSize, search, activo, especialidadId);
             Response.Headers.Append("X-Total-Count", total.ToString());
             return Ok(items);
         }
