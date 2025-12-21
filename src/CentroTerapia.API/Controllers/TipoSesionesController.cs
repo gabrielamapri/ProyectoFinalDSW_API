@@ -19,6 +19,7 @@ namespace CentroTerapia.API.Controllers
         }
 
         [HttpGet]
+        [AllowAnonymous]
         public async Task<ActionResult<IEnumerable<TipoSesionDto>>> GetAll()
         {
             var items = await _service.GetAllAsync();
@@ -26,6 +27,7 @@ namespace CentroTerapia.API.Controllers
         }
 
         [HttpGet("{id}")]
+        [AllowAnonymous]
         public async Task<ActionResult<TipoSesionDto>> GetById(int id)
         {
             try
