@@ -4,6 +4,7 @@ namespace CentroTerapia.Application.DTOs.Franja
     {
         public int Id { get; set; }
         public int TerapeutaId { get; set; }
+        public string TerapeutaNombre { get; set; }
         public DateTime? Fecha { get; set; }
         public int? DiaSemana { get; set; }
         public TimeSpan HoraInicio { get; set; }

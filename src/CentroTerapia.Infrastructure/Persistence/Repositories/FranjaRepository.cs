@@ -11,9 +11,24 @@ namespace CentroTerapia.Infrastructure.Persistence.Repositories
         {
         }
 
+        public override async Task<IEnumerable<FranjaDisponibilidad>> GetAllAsync()
+        {
+            return await _dbSet
+                .Include(f => f.Terapeuta)
+                .ToListAsync();
+        }
+
+        public override async Task<FranjaDisponibilidad?> GetByIdAsync(int id)
+        {
+            return await _dbSet
+                .Include(f => f.Terapeuta)
+                .FirstOrDefaultAsync(f => EF.Property<int>(f, "Id") == id);
+        }
+
         public async Task<IEnumerable<FranjaDisponibilidad>> GetByTerapeutaIdAsync(int terapeutaId)
         {
             return await _dbSet
+                .Include(f => f.Terapeuta)
                 .Where(f => f.TerapeutaId == terapeutaId)
                 .ToListAsync();
         }

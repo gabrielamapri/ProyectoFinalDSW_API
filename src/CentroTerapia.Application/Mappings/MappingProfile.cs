@@ -122,6 +122,7 @@ namespace CentroTerapia.Application.Mappings
             CreateMap<FranjaDisponibilidad, CentroTerapia.Application.DTOs.Franja.FranjaDisponibilidadDto>()
                 .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
                 .ForMember(dest => dest.TerapeutaId, opt => opt.MapFrom(src => src.TerapeutaId))
+                .ForMember(dest => dest.TerapeutaNombre, opt => opt.MapFrom(src => src.Terapeuta != null ? (src.Terapeuta.Nombres + " " + src.Terapeuta.Apellidos) : string.Empty))
                 .ForMember(dest => dest.Fecha, opt => opt.MapFrom(src => src.Fecha))
                 .ForMember(dest => dest.DiaSemana, opt => opt.MapFrom(src => src.DiaSemana))
                 .ForMember(dest => dest.HoraInicio, opt => opt.MapFrom(src => src.HoraInicio))
