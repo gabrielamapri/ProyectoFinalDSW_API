@@ -21,18 +21,20 @@ Requisitos previos
 - Motor de base de datos compatible MySQL/MariaDB (por defecto el proyecto asume puerto 3306).
 - (Opcional) `dotnet-ef` si desea aplicar migrations desde la CLI.
 
-Configuración
+
+Configuración para el funcionamiento
 - Clonar el repositorio:
 
 	`git clone <repositorio> && cd <repositorio>`
 
-```
 
-Inicializar la base de datos
+- Inicializar la base de datos
 
 - Cambiar credenciales: modifique el archivo `.env` en la raíz del repositorio con las credenciales de su servidor. Las variables clave son `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER` y `DB_PASSWORD`.
 
 - Crear la base de datos en MySQL: conecte a su servidor y cree la base de datos cuyo nombre coincida con `DB_NAME`.
+
+```
 
 DB_HOST=localhost
 DB_PORT=3306
