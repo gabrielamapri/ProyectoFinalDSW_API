@@ -1,6 +1,7 @@
 using AutoMapper;
 using Microsoft.Extensions.Logging;
 using CentroTerapia.Application.DTOs.Franja;
+using System.Linq;
 using CentroTerapia.Application.Interfaces;
 using CentroTerapia.Domain.Entities;
 using CentroTerapia.Domain.Exceptions;
@@ -75,10 +76,17 @@ namespace CentroTerapia.Application.Services
             if (franjas == null || !franjas.Any()) return result;
 
             // filter franjas applicable for the date
-            var applicable = franjas.Where(f =>
-                (f.Recurrente && f.DiaSemana.HasValue && f.DiaSemana.Value == (int)date.DayOfWeek)
-                || (!f.Recurrente && f.Fecha.HasValue && f.Fecha.Value.Date == date.Date)
-            ).ToList();
+            var applicable = new List<FranjaDisponibilidad>();
+            foreach (var f in franjas)
+            {
+                var isApplicable = (f.Recurrente && f.DiaSemana.HasValue && f.DiaSemana.Value == (int)date.DayOfWeek)
+                    || (!f.Recurrente && f.Fecha.HasValue && f.Fecha.Value.Date == date.Date);
+                if (!isApplicable) continue;
+                // check for exception for this franja on the date
+                var hasException = await _unitOfWork.Excepciones.ExistsAsync(f.Id, date.Date);
+                if (hasException) continue;
+                applicable.Add(f);
+            }
 
             if (!applicable.Any()) return result;
 
@@ -114,6 +122,33 @@ namespace CentroTerapia.Application.Services
             }
 
             return result.OrderBy(s => s.Inicio);
+        }
+
+        public async Task<IEnumerable<FranjaExcepcionDto>> AddExceptionAsync(int franjaId, AddFranjaExcepcionDto dto)
+        {
+            var franja = await _unitOfWork.Franjas.GetByIdWithRelationsAsync(franjaId);
+            if (franja == null) throw new NotFoundException("FranjaDisponibilidad", franjaId);
+
+            var fecha = dto.Fecha.Date;
+            var exists = await _unitOfWork.Excepciones.ExistsAsync(franjaId, fecha);
+            if (exists) throw new BusinessRuleException("AlreadyExists", "Ya existe una excepción para esa fecha.");
+
+            var entity = new Domain.Entities.FranjaExcepcion { FranjaId = franjaId, Fecha = fecha, Motivo = dto.Motivo };
+            await _unitOfWork.Excepciones.CreateAsync(entity);
+            await _unitOfWork.SaveChangesAsync();
+
+            // return all exceptions for this franja (simple convenience)
+            var list = await _unitOfWork.Excepciones.GetByFranjaIdInRangeAsync(franjaId, fecha.AddYears(-1), fecha.AddYears(1));
+            return _mapper.Map<IEnumerable<FranjaExcepcionDto>>(list);
+        }
+
+        public async Task<bool> RemoveExceptionAsync(int franjaId, DateTime fecha)
+        {
+            var f = _unitOfWork.Excepciones.Query().Where(e => e.FranjaId == franjaId && e.Fecha == fecha.Date).FirstOrDefault();
+            if (f == null) return false;
+            var deleted = await _unitOfWork.Excepciones.DeleteAsync(f.Id);
+            await _unitOfWork.SaveChangesAsync();
+            return deleted;
         }
     }
 }

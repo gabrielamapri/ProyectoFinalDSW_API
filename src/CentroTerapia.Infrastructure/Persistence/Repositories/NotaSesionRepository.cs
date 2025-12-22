@@ -18,5 +18,24 @@ namespace CentroTerapia.Infrastructure.Persistence.Repositories
                 .Include(n => n.Terapeuta)
                 .ToListAsync();
         }
+
+        public async Task<IEnumerable<NotaSesion>> GetAllAsync()
+        {
+            return await _dbSet
+                .Include(n => n.Terapeuta)
+                .Include(n => n.Cita)
+                    .ThenInclude(c => c.Paciente)
+                .ToListAsync();
+        }
+
+        public async Task<NotaSesion?> GetByIdAsync(int id)
+        {
+            return await _dbSet
+                .Where(n => n.Id == id)
+                .Include(n => n.Terapeuta)
+                .Include(n => n.Cita)
+                    .ThenInclude(c => c.Paciente)
+                .FirstOrDefaultAsync();
+        }
     }
 }

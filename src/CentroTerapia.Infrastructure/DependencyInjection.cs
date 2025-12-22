@@ -32,6 +32,7 @@ public static class DependencyInjection
         services.AddScoped<ITipoSesionRepository, TipoSesionRepository>();
         services.AddScoped<INotaSesionRepository, NotaSesionRepository>();
         services.AddScoped<IFranjaRepository, FranjaRepository>();
+        services.AddScoped<IFranjaExcepcionRepository, FranjaExcepcionRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 

@@ -20,6 +20,7 @@ namespace CentroTerapia.Infrastructure.Persistence.Context
         public DbSet<Familia> Familias { get; set; }
         public DbSet<TipoSesion> TiposSesion { get; set; }
         public DbSet<FranjaDisponibilidad> FranjasDisponibilidad { get; set; }
+        public DbSet<FranjaExcepcion> FranjaExcepciones { get; set; }
         public DbSet<Terapia> Terapias { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -48,6 +49,17 @@ namespace CentroTerapia.Infrastructure.Persistence.Context
             modelBuilder.Entity<Paciente>(pb =>
             {
                 pb.Property(p => p.Sexo).HasConversion<int>();
+            });
+
+            // FranjaExcepcion: unique per (FranjaId, Fecha)
+            modelBuilder.Entity<FranjaExcepcion>(eb =>
+            {
+                eb.HasOne(e => e.Franja)
+                  .WithMany()
+                  .HasForeignKey(e => e.FranjaId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+                eb.HasIndex(e => new { e.FranjaId, e.Fecha }).IsUnique();
             });
         }
     }

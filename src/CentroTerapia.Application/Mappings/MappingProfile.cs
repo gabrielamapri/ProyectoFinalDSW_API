@@ -6,6 +6,7 @@ using CentroTerapia.Application.DTOs.Cita;
 // Veterinary remnants removed; mappings consolidated under Familia/Responsable
 using CentroTerapia.Application.DTOs.Paciente;
 using CentroTerapia.Application.DTOs.Terapeuta;
+using CentroTerapia.Application.DTOs.NotaSesion;
 using CentroTerapia.Domain.Entities;
 
 namespace CentroTerapia.Application.Mappings
@@ -111,6 +112,23 @@ namespace CentroTerapia.Application.Mappings
 
             CreateMap<CentroTerapia.Application.DTOs.Terapia.UpdateTipoSesionDto, CentroTerapia.Domain.Entities.TipoSesion>();
 
+            // NotaSesion mappings
+            CreateMap<NotaSesion, NotaSesionDto>()
+                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
+                .ForMember(dest => dest.CitaId, opt => opt.MapFrom(src => src.CitaId))
+                .ForMember(dest => dest.TerapeutaId, opt => opt.MapFrom(src => src.TerapeutaId))
+                .ForMember(dest => dest.TerapeutaNombre, opt => opt.MapFrom(src => src.Terapeuta != null ? (src.Terapeuta.Nombres + " " + src.Terapeuta.Apellidos) : string.Empty))
+                .ForMember(dest => dest.PacienteNombre, opt => opt.MapFrom(src => src.Cita != null && src.Cita.Paciente != null ? (src.Cita.Paciente.Nombres + " " + src.Cita.Paciente.Apellidos) : string.Empty))
+                .ForMember(dest => dest.Notas, opt => opt.MapFrom(src => src.Notas ?? string.Empty))
+                .ForMember(dest => dest.FechaCreacion, opt => opt.MapFrom(src => src.FechaCreacion));
+
+            CreateMap<CreateNotaSesionDto, NotaSesion>()
+                .ForMember(dest => dest.CitaId, opt => opt.MapFrom(src => src.CitaId))
+                .ForMember(dest => dest.TerapeutaId, opt => opt.MapFrom(src => src.TerapeutaId))
+                .ForMember(dest => dest.Notas, opt => opt.MapFrom(src => src.Notas));
+
+            CreateMap<UpdateNotaSesionDto, NotaSesion>();
+
             // Familia mappings
             CreateMap<Familia, CentroTerapia.Application.DTOs.Familia.FamiliaDto>()
                 .ForMember(dest => dest.Pacientes, opt => opt.MapFrom(src => src.Pacientes));
@@ -136,6 +154,13 @@ namespace CentroTerapia.Application.Mappings
                 .ForMember(dest => dest.HoraInicio, opt => opt.MapFrom(src => src.HoraInicio))
                 .ForMember(dest => dest.HoraFin, opt => opt.MapFrom(src => src.HoraFin))
                 .ForMember(dest => dest.Recurrente, opt => opt.MapFrom(src => src.Recurrente));
+
+            CreateMap<FranjaExcepcion, CentroTerapia.Application.DTOs.Franja.FranjaExcepcionDto>()
+                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
+                .ForMember(dest => dest.FranjaId, opt => opt.MapFrom(src => src.FranjaId))
+                .ForMember(dest => dest.Fecha, opt => opt.MapFrom(src => src.Fecha))
+                .ForMember(dest => dest.Motivo, opt => opt.MapFrom(src => src.Motivo))
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt));
 
         }
     }

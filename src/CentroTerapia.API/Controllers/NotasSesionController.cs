@@ -8,7 +8,7 @@ namespace CentroTerapia.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize]
+    [AllowAnonymous]
     public class NotasSesionController : ControllerBase
     {
         private readonly INotaSesionService _service;

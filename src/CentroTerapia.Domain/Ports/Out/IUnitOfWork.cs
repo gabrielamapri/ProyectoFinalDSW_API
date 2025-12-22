@@ -11,6 +11,7 @@ namespace CentroTerapia.Domain.Ports.Out
         ITipoSesionRepository TiposSesion { get; }
         INotaSesionRepository NotasSesion { get; }
         IFranjaRepository Franjas { get; }
+        IFranjaExcepcionRepository Excepciones { get; }
         
         Task<int> SaveChangesAsync();
         Task BeginTransactionAsync();

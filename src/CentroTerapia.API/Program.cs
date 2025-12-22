@@ -38,6 +38,8 @@ if (File.Exists(envPath))
 }
 
 var builder = WebApplication.CreateBuilder(args);
+// Force the app to listen on localhost:5291 unless overridden by environment
+builder.WebHost.UseUrls("http://localhost:5291");
 
 // Configurar CORS
 

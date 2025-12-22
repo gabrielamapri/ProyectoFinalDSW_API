@@ -17,6 +17,7 @@ namespace CentroTerapia.Infrastructure.Persistence.Repositories
         public ITipoSesionRepository TiposSesion { get; }
         public INotaSesionRepository NotasSesion { get; }
     public IFranjaRepository Franjas { get; }
+    public IFranjaExcepcionRepository Excepciones { get; }
 
         public UnitOfWork(ApplicationDbContext context,
                           ICitaRepository citaRepository,
@@ -26,7 +27,8 @@ namespace CentroTerapia.Infrastructure.Persistence.Repositories
                           IFamiliaRepository familiaRepository,
                           ITipoSesionRepository tipoSesionRepository,
                           INotaSesionRepository notaSesionRepository,
-                          IFranjaRepository franjaRepository
+                          IFranjaRepository franjaRepository,
+                          IFranjaExcepcionRepository franjaExcepcionRepository
                           )
         {
             _context = context;
@@ -38,6 +40,7 @@ namespace CentroTerapia.Infrastructure.Persistence.Repositories
             TiposSesion = tipoSesionRepository;
             NotasSesion = notaSesionRepository;
             Franjas = franjaRepository;
+            Excepciones = franjaExcepcionRepository;
         }
 
         public async Task<int> SaveChangesAsync()
