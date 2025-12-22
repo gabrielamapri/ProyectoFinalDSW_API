@@ -115,11 +115,9 @@ app.UseMiddleware<GlobalExceptionMiddleware>();
 // Usar CORS antes de otros middlewares
 app.UseCors("AllowFrontend");
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// Always enable Swagger so reviewers can see API docs after cloning.
+app.UseSwagger();
+app.UseSwaggerUI();
 
 // Only enforce HTTPS redirection outside Development so local HTTP (swagger) works when developing
 if (!app.Environment.IsDevelopment())
