@@ -44,15 +44,48 @@ builder.WebHost.UseUrls("http://localhost:5291");
 // Configurar CORS
 
 var allowOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
- ?? new [] { "http://localhost:5173", "https://localhost:7057", "http://localhost:5291", "https://localhost:5001", "http://localhost:5000" }; // Valor por defecto si no se encuentra en la configuración
+ ?? new [] {
+    "http://localhost:5173",
+    "http://localhost:5178",
+    "http://localhost:5182", // Vite dev server
+    "http://localhost:5183", // Vite alternate dev port
+    "https://localhost:7057",
+    "http://localhost:5291",
+    "https://localhost:5001",
+    "http://localhost:5000"
+};
 
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins(allowOrigins)
-              .AllowAnyHeader()
-              .AllowAnyMethod();
+        // In Development allow any localhost origin to avoid editing the list each time Vite uses a different port.
+        if (builder.Environment.IsDevelopment())
+        {
+            policy.SetIsOriginAllowed(origin =>
+            {
+                try
+                {
+                    var u = new Uri(origin);
+                    // Allow loopback and localhost hostnames
+                    return u.IsLoopback || string.Equals(u.Host, "localhost", StringComparison.OrdinalIgnoreCase);
+                }
+                catch
+                {
+                    return false;
+                }
+            })
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+        }
+        else
+        {
+            policy.WithOrigins(allowOrigins)
+                  .AllowAnyHeader()
+                  .AllowAnyMethod()
+                  .AllowCredentials();
+        }
     });
 });
 

@@ -102,7 +102,9 @@ namespace CentroTerapia.Application.Mappings
                 .ForMember(dest => dest.Nombre, opt => opt.MapFrom(src => src.Nombre))
                 .ForMember(dest => dest.DuracionMinutos, opt => opt.MapFrom(src => src.DuracionMinutos))
                 .ForMember(dest => dest.Precio, opt => opt.MapFrom(src => src.Precio))
-                .ForMember(dest => dest.Descripcion, opt => opt.MapFrom(src => src.Descripcion ?? string.Empty));
+                .ForMember(dest => dest.Descripcion, opt => opt.MapFrom(src => src.Descripcion ?? string.Empty))
+                .ForMember(dest => dest.EspecialidadId, opt => opt.MapFrom(src => src.EspecialidadId))
+                .ForMember(dest => dest.EspecialidadNombre, opt => opt.MapFrom(src => src.Especialidad != null ? src.Especialidad.Nombre : string.Empty));
 
             CreateMap<CentroTerapia.Application.DTOs.Terapia.CreateTipoSesionDto, CentroTerapia.Domain.Entities.TipoSesion>()
                 .ForMember(dest => dest.Nombre, opt => opt.MapFrom(src => src.Nombre))

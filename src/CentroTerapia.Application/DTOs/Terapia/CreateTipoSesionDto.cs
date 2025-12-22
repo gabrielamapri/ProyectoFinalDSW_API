@@ -6,5 +6,6 @@ namespace CentroTerapia.Application.DTOs.Terapia
         public int DuracionMinutos { get; set; }
         public decimal? Precio { get; set; }
         public string Descripcion { get; set; } = string.Empty;
+        public int EspecialidadId { get; set; }
     }
 }

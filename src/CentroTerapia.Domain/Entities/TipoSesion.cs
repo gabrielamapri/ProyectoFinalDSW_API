@@ -7,5 +7,8 @@ namespace CentroTerapia.Domain.Entities
         public int DuracionMinutos { get; set; }
         public decimal? Precio { get; set; }
         public string Descripcion { get; set; } = string.Empty;
+        // Link to Especialidad: each TipoSesion belongs to a single Especialidad
+        public int EspecialidadId { get; set; }
+        public Especialidad? Especialidad { get; set; }
     }
 }
