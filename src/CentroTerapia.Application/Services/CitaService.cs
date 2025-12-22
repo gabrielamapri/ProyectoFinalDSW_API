@@ -65,51 +65,184 @@ namespace CentroTerapia.Application.Services;
         }
         if (duration <= 0) duration = 60; // default
 
-        // if Terapeuta provided, verify franja and check overlaps
+        // Additional checks: patient same-day/specialty and min gaps
+        var dayStartCheck = dto.Fecha.Date;
+        var dayEndCheck = dto.Fecha.Date.AddDays(1).AddTicks(-1);
+        var patientAppointments = (await _unitOfWork.Citas.GetByDateRangeAsync(dayStartCheck, dayEndCheck)).Where(a => a.PacienteId == dto.PacienteId).ToList();
+
+        // If Terapeuta provided, verify franja (respecting FranjaExcepcion) and check overlaps with buffer
         if (dto.TerapeutaId.HasValue)
         {
             var franjas = await _unitOfWork.Franjas.GetByTerapeutaIdAsync(dto.TerapeutaId.Value);
             var appointmentTime = dto.Fecha.TimeOfDay;
             var appointmentEndTime = appointmentTime.Add(TimeSpan.FromMinutes(duration));
 
-            var covers = franjas.Any(f =>
-                (f.Recurrente && f.DiaSemana.HasValue && f.DiaSemana.Value == (int)dto.Fecha.DayOfWeek || (!f.Recurrente && f.Fecha.HasValue && f.Fecha.Value.Date == dto.Fecha.Date))
-                && appointmentTime >= f.HoraInicio && appointmentEndTime <= f.HoraFin);
+            var covers = false;
+            foreach (var f in franjas)
+            {
+                var isApplicable = (f.Recurrente && f.DiaSemana.HasValue && f.DiaSemana.Value == (int)dto.Fecha.DayOfWeek)
+                    || (!f.Recurrente && f.Fecha.HasValue && f.Fecha.Value.Date == dto.Fecha.Date);
+                if (!isApplicable) continue;
+                var hasException = await _unitOfWork.Excepciones.ExistsAsync(f.Id, dto.Fecha.Date);
+                if (hasException) continue;
+                if (appointmentTime >= f.HoraInicio && appointmentEndTime <= f.HoraFin)
+                {
+                    covers = true;
+                    break;
+                }
+            }
 
             if (!covers)
             {
                 throw new BusinessRuleException("NoAvailability", "No existe una franja disponible del terapeuta en la fecha/hora solicitada.");
             }
 
-            // check overlaps
-            var windowStart = dto.Fecha.AddMinutes(-duration);
-            var windowEnd = dto.Fecha.AddMinutes(duration);
+            // check overlaps for therapist with 30min buffer
+            var windowStart = dto.Fecha.AddMinutes(-duration - 30);
+            var windowEnd = dto.Fecha.AddMinutes(duration + 30);
             var potential = await _unitOfWork.Citas.GetByDateRangeAsync(windowStart, windowEnd);
+            var newStart = dto.Fecha;
+            var newEnd = dto.Fecha.AddMinutes(duration);
             var overlaps = potential.Where(a => a.TerapeutaId == dto.TerapeutaId)
                 .Any(a =>
                 {
                     var existingStart = a.Fecha;
                     var existingDuration = a.DuracionMinutos > 0 ? a.DuracionMinutos : duration;
                     var existingEnd = existingStart.AddMinutes(existingDuration);
-                    var newStart = dto.Fecha;
-                    var newEnd = dto.Fecha.AddMinutes(duration);
-                    return existingStart < newEnd && existingEnd > newStart;
+                    // require at least 30 minutes between appointments
+                    return existingEnd.AddMinutes(30) > newStart && existingStart < newEnd.AddMinutes(30);
                 });
 
             if (overlaps)
             {
-                throw new BusinessRuleException("ConflictoHorario", "El terapeuta tiene otra cita en ese horario.");
+                throw new BusinessRuleException("ConflictoHorario", "El terapeuta tiene otra cita muy cercana o solapada en ese horario.");
+            }
+        }
+
+        // Patient-level rules: no more than one appointment per same specialty in the same day,
+        // and require at least 30 minutes gap between any of the patient's appointments.
+        if (patientAppointments.Any())
+        {
+            // determine requested specialty (from Terapeuta if provided)
+            int? requestedEspecialidadId = null;
+            if (dto.TerapeutaId.HasValue)
+            {
+                var t = await _unitOfWork.Terapeutas.GetByIdAsync(dto.TerapeutaId.Value);
+                requestedEspecialidadId = t?.EspecialidadId;
+            }
+
+            // check same-day same-specialty
+            if (requestedEspecialidadId.HasValue)
+            {
+                foreach (var pA in patientAppointments.Where(a => a.TerapeutaId.HasValue))
+                {
+                    var existingTer = await _unitOfWork.Terapeutas.GetByIdAsync(pA.TerapeutaId!.Value);
+                    if (existingTer != null && existingTer.EspecialidadId == requestedEspecialidadId.Value)
+                    {
+                        throw new BusinessRuleException("OnePerSpecialityPerDay", "Ya existe una cita para la misma especialidad en esa fecha.");
+                    }
+                }
+            }
+
+            // check 30-minute gap between patient's appointments
+            foreach (var pA in patientAppointments)
+            {
+                var existingStart = pA.Fecha;
+                var existingDuration = pA.DuracionMinutos > 0 ? pA.DuracionMinutos : duration;
+                var existingEnd = existingStart.AddMinutes(existingDuration);
+                var newStartLocal = dto.Fecha;
+                var newEndLocal = dto.Fecha.AddMinutes(duration);
+                var gapOk = existingEnd.AddMinutes(30) <= newStartLocal || newEndLocal.AddMinutes(30) <= existingStart;
+                if (!gapOk)
+                {
+                    throw new BusinessRuleException("MinGap", "Debe haber al menos 30 minutos entre el fin de una cita y el inicio de la siguiente.");
+                }
             }
         }
 
         var Cita = _mapper.Map<Cita>(dto);
         Cita.DuracionMinutos = duration;
 
-        var createdAppointment = await _unitOfWork.Citas.CreateAsync(Cita);
-        await _unitOfWork.SaveChangesAsync();
-        var appointmentWithDetails = await _unitOfWork.Citas.GetWithPacienteAndFamiliaAsync(createdAppointment.Id);
-        _logger.LogInformation("Cita for Paciente ID {PacienteID} created successfully with ID {Id}.", dto.PacienteId, createdAppointment.Id);
-        return _mapper.Map<CitaDto>(appointmentWithDetails!);
+        // Start transaction to make creation atomic and avoid race conditions
+        await _unitOfWork.BeginTransactionAsync();
+        try
+        {
+            // re-check overlaps right before saving (to avoid race conditions)
+            if (dto.TerapeutaId.HasValue)
+            {
+                var windowStart = dto.Fecha.AddMinutes(-duration - 30);
+                var windowEnd = dto.Fecha.AddMinutes(duration + 30);
+                var potential = await _unitOfWork.Citas.GetByDateRangeAsync(windowStart, windowEnd);
+                var newStart = dto.Fecha;
+                var newEnd = dto.Fecha.AddMinutes(duration);
+                var overlapsNow = potential.Where(a => a.TerapeutaId == dto.TerapeutaId)
+                    .Any(a =>
+                    {
+                        var existingStart = a.Fecha;
+                        var existingDuration = a.DuracionMinutos > 0 ? a.DuracionMinutos : duration;
+                        var existingEnd = existingStart.AddMinutes(existingDuration);
+                        return existingEnd.AddMinutes(30) > newStart && existingStart < newEnd.AddMinutes(30);
+                    });
+                if (overlapsNow)
+                {
+                    await _unitOfWork.RollbackTransactionAsync();
+                    throw new BusinessRuleException("ConflictoHorario", "El terapeuta tiene otra cita muy cercana o solapada en ese horario.");
+                }
+            }
+
+            // re-check patient gaps and same-specialty constraint
+            dayStartCheck = dto.Fecha.Date;
+            dayEndCheck = dto.Fecha.Date.AddDays(1).AddTicks(-1);
+            var patientAppointmentsNow = (await _unitOfWork.Citas.GetByDateRangeAsync(dayStartCheck, dayEndCheck)).Where(a => a.PacienteId == dto.PacienteId).ToList();
+            if (patientAppointmentsNow.Any())
+            {
+                int? requestedEspecialidadId = null;
+                if (dto.TerapeutaId.HasValue)
+                {
+                    var t = await _unitOfWork.Terapeutas.GetByIdAsync(dto.TerapeutaId.Value);
+                    requestedEspecialidadId = t?.EspecialidadId;
+                }
+                if (requestedEspecialidadId.HasValue)
+                {
+                    foreach (var pA in patientAppointmentsNow.Where(a => a.TerapeutaId.HasValue))
+                    {
+                        var existingTer = await _unitOfWork.Terapeutas.GetByIdAsync(pA.TerapeutaId!.Value);
+                        if (existingTer != null && existingTer.EspecialidadId == requestedEspecialidadId.Value)
+                        {
+                            await _unitOfWork.RollbackTransactionAsync();
+                            throw new BusinessRuleException("OnePerSpecialityPerDay", "Ya existe una cita para la misma especialidad en esa fecha.");
+                        }
+                    }
+                }
+                foreach (var pA in patientAppointmentsNow)
+                {
+                    var existingStart = pA.Fecha;
+                    var existingDuration = pA.DuracionMinutos > 0 ? pA.DuracionMinutos : duration;
+                    var existingEnd = existingStart.AddMinutes(existingDuration);
+                    var newStartLocal = dto.Fecha;
+                    var newEndLocal = dto.Fecha.AddMinutes(duration);
+                    var gapOk = existingEnd.AddMinutes(30) <= newStartLocal || newEndLocal.AddMinutes(30) <= existingStart;
+                    if (!gapOk)
+                    {
+                        await _unitOfWork.RollbackTransactionAsync();
+                        throw new BusinessRuleException("MinGap", "Debe haber al menos 30 minutos entre el fin de una cita y el inicio de la siguiente.");
+                    }
+                }
+            }
+
+            var createdAppointment = await _unitOfWork.Citas.CreateAsync(Cita);
+            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.CommitTransactionAsync();
+
+            var appointmentWithDetails = await _unitOfWork.Citas.GetWithPacienteAndFamiliaAsync(createdAppointment.Id);
+            _logger.LogInformation("Cita for Paciente ID {PacienteID} created successfully with ID {Id}.", dto.PacienteId, createdAppointment.Id);
+            return _mapper.Map<CitaDto>(appointmentWithDetails!);
+        }
+        catch
+        {
+            try { await _unitOfWork.RollbackTransactionAsync(); } catch {}
+            throw;
+        }
     }
 
     public async Task<CitaDto> UpdateAsync(int id, UpdateCitaDto dto)

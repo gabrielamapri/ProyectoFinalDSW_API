@@ -9,7 +9,6 @@ namespace CentroTerapia.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize]
     public class FamiliasController : ControllerBase
     {
         private readonly IFamiliaService _service;

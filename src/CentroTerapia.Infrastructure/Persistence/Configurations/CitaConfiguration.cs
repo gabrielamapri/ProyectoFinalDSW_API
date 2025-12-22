@@ -30,6 +30,8 @@ namespace CentroTerapia.Infrastructure.Persistence.Configurations
             builder.HasIndex(a => a.PacienteId);
             builder.HasIndex(a => a.Fecha);
             builder.HasIndex(a => a.Estado);
+            // Ensure a therapist cannot have two appointments starting at the exact same datetime
+            builder.HasIndex(a => new { a.TerapeutaId, a.Fecha }).IsUnique();
 
         }
     }

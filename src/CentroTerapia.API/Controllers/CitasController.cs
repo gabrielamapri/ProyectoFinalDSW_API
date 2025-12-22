@@ -86,6 +86,7 @@ namespace CentroTerapia.API.Controllers
             }
         }
 
+        [AllowAnonymous]
         [HttpPost]
         public async Task<ActionResult<CitaDto>> Create([FromBody] CreateCitaDto dto)
         {
