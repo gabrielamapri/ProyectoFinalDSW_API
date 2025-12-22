@@ -19,6 +19,7 @@ namespace CentroTerapia.API.Controllers
         }
 
         [HttpGet]
+        [AllowAnonymous]
         public async Task<ActionResult<IEnumerable<FranjaDisponibilidadDto>>> GetAll()
         {
             var items = await _service.GetAllAsync();
@@ -26,6 +27,7 @@ namespace CentroTerapia.API.Controllers
         }
 
         [HttpGet("{id}")]
+        [AllowAnonymous]
         public async Task<ActionResult<FranjaDisponibilidadDto>> GetById(int id)
         {
             try
@@ -40,6 +42,7 @@ namespace CentroTerapia.API.Controllers
         }
 
         [HttpGet("terapeuta/{terapeutaId}")]
+        [AllowAnonymous]
         public async Task<ActionResult<IEnumerable<FranjaDisponibilidadDto>>> GetByTerapeuta(int terapeutaId)
         {
             var items = await _service.GetByTerapeutaIdAsync(terapeutaId);
@@ -47,6 +50,7 @@ namespace CentroTerapia.API.Controllers
         }
 
         [HttpGet("{terapeutaId}/slots")]
+        [AllowAnonymous]
         public async Task<ActionResult<IEnumerable<CentroTerapia.Application.DTOs.Franja.SlotDto>>> GetSlots(int terapeutaId, [FromQuery] DateTime date, [FromQuery] int duracion = 60)
         {
             if (duracion <= 0) duracion = 60;

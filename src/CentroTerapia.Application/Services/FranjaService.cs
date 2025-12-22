@@ -40,17 +40,15 @@ namespace CentroTerapia.Application.Services
 
         public async Task<IEnumerable<FranjaDisponibilidadDto>> GetAllAsync()
         {
-            var items = await _unitOfWork.Franjas.GetAllAsync();
+            var items = await _unitOfWork.Franjas.GetAllWithRelationsAsync();
             return _mapper.Map<IEnumerable<FranjaDisponibilidadDto>>(items);
         }
-
         public async Task<FranjaDisponibilidadDto> GetByIdAsync(int id)
         {
-            var item = await _unitOfWork.Franjas.GetByIdAsync(id);
+            var item = await _unitOfWork.Franjas.GetByIdWithRelationsAsync(id);
             if (item == null) throw new NotFoundException("FranjaDisponibilidad", id);
             return _mapper.Map<FranjaDisponibilidadDto>(item);
         }
-
         public async Task<IEnumerable<FranjaDisponibilidadDto>> GetByTerapeutaIdAsync(int terapeutaId)
         {
             var items = await _unitOfWork.Franjas.GetByTerapeutaIdAsync(terapeutaId);
@@ -59,12 +57,14 @@ namespace CentroTerapia.Application.Services
 
         public async Task<FranjaDisponibilidadDto> UpdateAsync(int id, CreateFranjaDto dto)
         {
-            var item = await _unitOfWork.Franjas.GetByIdAsync(id);
+            var item = await _unitOfWork.Franjas.GetByIdWithRelationsAsync(id);
             if (item == null) throw new NotFoundException("FranjaDisponibilidad", id);
             _mapper.Map(dto, item);
             var updated = await _unitOfWork.Franjas.UpdateAsync(item);
             await _unitOfWork.SaveChangesAsync();
-            return _mapper.Map<FranjaDisponibilidadDto>(updated);
+            // reload with relations to include Terapeuta
+            var reloaded = await _unitOfWork.Franjas.GetByIdWithRelationsAsync(updated.Id);
+            return _mapper.Map<FranjaDisponibilidadDto>(reloaded ?? updated);
         }
 
         public async Task<IEnumerable<CentroTerapia.Application.DTOs.Franja.SlotDto>> GetAvailableSlotsAsync(int terapeutaId, DateTime date, int duracionMinutos)
