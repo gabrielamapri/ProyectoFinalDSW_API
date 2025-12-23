@@ -22,6 +22,7 @@ namespace CentroTerapia.Application
             services.AddScoped<INotaSesionService, NotaSesionService>();
             services.AddScoped<IFranjaService, FranjaService>();
             services.AddScoped<IAuthService, AuthService>();
+            services.AddScoped<IReporteService, ReporteService>();
 
             // Keep appointment validators
             services.AddValidatorsFromAssemblyContaining<CreateCitaDtoValidator>();
