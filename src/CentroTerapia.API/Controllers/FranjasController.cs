@@ -57,6 +57,16 @@ namespace CentroTerapia.API.Controllers
             return Ok(slots);
         }
 
+        [HttpGet("{terapeutaId}/available-dates")]
+        [AllowAnonymous]
+        public async Task<ActionResult<IEnumerable<DateTime>>> GetAvailableDates(int terapeutaId, [FromQuery] DateTime start, [FromQuery] DateTime end, [FromQuery] int duracion = 60)
+        {
+            if (duracion <= 0) duracion = 60;
+            if (end < start) return BadRequest(new { message = "'end' must be greater or equal to 'start'" });
+            var dates = await _service.GetAvailableDatesAsync(terapeutaId, start.Date, end.Date, duracion);
+            return Ok(dates);
+        }
+
         [HttpPost]
         public async Task<ActionResult<FranjaDisponibilidadDto>> Create([FromBody] CreateFranjaDto dto)
         {

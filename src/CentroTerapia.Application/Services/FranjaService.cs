@@ -79,6 +79,10 @@ namespace CentroTerapia.Application.Services
             var applicable = new List<FranjaDisponibilidad>();
             foreach (var f in franjas)
             {
+                // Log values to help debug weekday mapping issues (temporary)
+                _logger.LogInformation("FranjaId={FranjaId} TerapeutaId={TerapeutaId} DiaSemana={DiaSemana} DateDayOfWeek={DateDayOfWeek} Date={Date} Recurrente={Recurrente}",
+                    f.Id, f.TerapeutaId, f.DiaSemana, (int)date.DayOfWeek, date.ToString("yyyy-MM-dd"), f.Recurrente);
+
                 var isApplicable = (f.Recurrente && f.DiaSemana.HasValue && f.DiaSemana.Value == (int)date.DayOfWeek)
                     || (!f.Recurrente && f.Fecha.HasValue && f.Fecha.Value.Date == date.Date);
                 if (!isApplicable) continue;
@@ -122,6 +126,22 @@ namespace CentroTerapia.Application.Services
             }
 
             return result.OrderBy(s => s.Inicio);
+        }
+
+        public async Task<IEnumerable<DateTime>> GetAvailableDatesAsync(int terapeutaId, DateTime start, DateTime end, int duracionMinutos)
+        {
+            var dates = new List<DateTime>();
+            if (end < start) return dates;
+
+            var current = start.Date;
+            while (current <= end.Date)
+            {
+                var slots = await GetAvailableSlotsAsync(terapeutaId, current, duracionMinutos);
+                if (slots != null && slots.Any()) dates.Add(current);
+                current = current.AddDays(1);
+            }
+
+            return dates;
         }
 
         public async Task<IEnumerable<FranjaExcepcionDto>> AddExceptionAsync(int franjaId, AddFranjaExcepcionDto dto)

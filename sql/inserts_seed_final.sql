@@ -84,20 +84,21 @@ VALUES ('Elena', 'Suarez', @esp2Id, 'Psicóloga infantil', '912345681', 'Pza. Ma
 SET @terapeuta4Id = LAST_INSERT_ID();
 
 -- 6) Tipos de sesión (sesiones)
-INSERT INTO TiposSesion (Nombre, DuracionMinutos, Precio, Descripcion)
-VALUES ('Terapia del Lenguaje (Individual)', 45, 30.00, 'Mejora de lenguaje expresivo y comprensivo');
+-- Each TipoSesion is named after its Especialidad and all last 45 minutes
+INSERT INTO TiposSesion (Nombre, DuracionMinutos, Precio, Descripcion, EspecialidadId)
+VALUES ('Sesión de Terapia del Lenguaje', 45, 30.00, 'Sesión relacionada con la especialidad Terapia del Lenguaje', @esp1Id);
 SET @tipo1Id = LAST_INSERT_ID();
 
-INSERT INTO TiposSesion (Nombre, DuracionMinutos, Precio, Descripcion)
-VALUES ('Estimulación Temprana', 60, 35.00, 'Intervención para bebés y niños con riesgo de retraso');
+INSERT INTO TiposSesion (Nombre, DuracionMinutos, Precio, Descripcion, EspecialidadId)
+VALUES ('Sesión de Psicología Infantil', 45, 35.00, 'Sesión relacionada con la especialidad Psicología Infantil', @esp2Id);
 SET @tipo2Id = LAST_INSERT_ID();
 
-INSERT INTO TiposSesion (Nombre, DuracionMinutos, Precio, Descripcion)
-VALUES ('Fisioterapia Pediátrica (45 min)', 45, 40.00, 'Sesión de fisioterapia pediátrica individual');
+INSERT INTO TiposSesion (Nombre, DuracionMinutos, Precio, Descripcion, EspecialidadId)
+VALUES ('Sesión de Fisioterapia Pediátrica', 45, 40.00, 'Sesión relacionada con la especialidad Fisioterapia Pediátrica', @esp3Id);
 SET @tipo3Id = LAST_INSERT_ID();
 
-INSERT INTO TiposSesion (Nombre, DuracionMinutos, Precio, Descripcion)
-VALUES ('Terapia Ocupacional (30 min)', 30, 25.00, 'Sesión de terapia ocupacional breve');
+INSERT INTO TiposSesion (Nombre, DuracionMinutos, Precio, Descripcion, EspecialidadId)
+VALUES ('Sesión de Terapia Ocupacional', 45, 25.00, 'Sesión relacionada con la especialidad Terapia Ocupacional', @esp4Id);
 SET @tipo4Id = LAST_INSERT_ID();
 
 -- 7) Franjas de disponibilidad (recurrentes por día de semana)
@@ -113,9 +114,9 @@ VALUES
 INSERT INTO Citas (Fecha, Motivo, Estado, Notas, FechaCreacion, PacienteId, TerapeutaId, TipoSesionId, DuracionMinutos)
 VALUES
 ('2025-12-25 10:00:00', 'Evaluación inicial de lenguaje', 'Scheduled', 'Traer informes médicos', NOW(), @paciente1, @terapeuta1Id, @tipo1Id, 45),
-('2025-12-26 09:30:00', 'Sesión de estimulación', 'Scheduled', NULL, NOW(), @paciente2, @terapeuta2Id, @tipo2Id, 60),
+('2025-12-26 09:30:00', 'Sesión de estimulación', 'Scheduled', NULL, NOW(), @paciente2, @terapeuta2Id, @tipo2Id, 45),
 ('2025-12-27 11:00:00', 'Fisioterapia seguimiento', 'Scheduled', NULL, NOW(), @paciente3, @terapeuta2Id, @tipo3Id, 45),
-('2025-12-28 10:30:00', 'Terapia ocupacional', 'Scheduled', 'Evaluar motricidad fina', NOW(), @paciente4, @terapeuta3Id, @tipo4Id, 30);
+('2025-12-28 10:30:00', 'Terapia ocupacional', 'Scheduled', 'Evaluar motricidad fina', NOW(), @paciente4, @terapeuta3Id, @tipo4Id, 45);
 SET @cita1Id = LAST_INSERT_ID();
 
 -- 9) Notas de sesión (asociadas a citas)

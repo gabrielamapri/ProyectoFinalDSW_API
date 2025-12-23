@@ -52,7 +52,9 @@ namespace CentroTerapia.Application.Mappings
                 .ForMember(dest => dest.TipoSesionId, opt => opt.MapFrom(src => src.TipoSesionId))
                 .ForMember(dest => dest.TipoSesionNombre, opt => opt.MapFrom(src => src.TipoSesion != null ? src.TipoSesion.Nombre : string.Empty))
                 .ForMember(dest => dest.TerapeutaId, opt => opt.MapFrom(src => src.TerapeutaId))
-                .ForMember(dest => dest.DuracionMinutos, opt => opt.MapFrom(src => src.DuracionMinutos));
+                .ForMember(dest => dest.TerapeutaNombre, opt => opt.MapFrom(src => src.Terapeuta != null ? (src.Terapeuta.Nombres + " " + src.Terapeuta.Apellidos) : string.Empty))
+                .ForMember(dest => dest.DuracionMinutos, opt => opt.MapFrom(src => src.DuracionMinutos))
+                .ForMember(dest => dest.Precio, opt => opt.MapFrom(src => src.TipoSesion != null ? (decimal?)src.TipoSesion.Precio : null));
 
             CreateMap<CreatePacienteDto, Paciente>()
                 .ForMember(dest => dest.Nombres, opt => opt.MapFrom(src => src.Nombres))

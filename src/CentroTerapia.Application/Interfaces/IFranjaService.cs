@@ -13,5 +13,6 @@ namespace CentroTerapia.Application.Interfaces
         Task<bool> DeleteAsync(int id);
         Task<IEnumerable<FranjaDisponibilidadDto>> GetByTerapeutaIdAsync(int terapeutaId);
         Task<IEnumerable<CentroTerapia.Application.DTOs.Franja.SlotDto>> GetAvailableSlotsAsync(int terapeutaId, DateTime date, int duracionMinutos);
+        Task<IEnumerable<DateTime>> GetAvailableDatesAsync(int terapeutaId, DateTime start, DateTime end, int duracionMinutos);
     }
 }

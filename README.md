@@ -96,3 +96,4 @@ Archivos importantes
 
 --------------------------------------------------------------------------------
 
+dotnet run --project src/CentroTerapia.API
