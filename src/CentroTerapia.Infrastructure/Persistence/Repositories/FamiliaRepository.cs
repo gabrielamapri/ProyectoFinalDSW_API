@@ -24,7 +24,14 @@ namespace CentroTerapia.Infrastructure.Persistence.Repositories
             if (!string.IsNullOrWhiteSpace(search))
             {
                 var s = search.Trim().ToLower();
-                query = query.Where(f => (f.ResponsablePrincipalNombre ?? string.Empty).ToLower().Contains(s) || (f.ResponsablePrincipalApellido ?? string.Empty).ToLower().Contains(s));
+                query = query.Where(f => 
+                    (f.ResponsablePrincipalNombre ?? string.Empty).ToLower().Contains(s) || 
+                    (f.ResponsablePrincipalApellido ?? string.Empty).ToLower().Contains(s) ||
+                    (f.ResponsablePrincipalDNI ?? string.Empty).ToLower().Contains(s) ||
+                    (f.Responsable2Nombre ?? string.Empty).ToLower().Contains(s) ||
+                    (f.Responsable2Apellido ?? string.Empty).ToLower().Contains(s) ||
+                    (f.Responsable2DNI ?? string.Empty).ToLower().Contains(s)
+                );
             }
 
             var total = await query.CountAsync();

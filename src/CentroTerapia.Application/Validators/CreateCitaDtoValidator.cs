@@ -22,7 +22,6 @@ namespace CentroTerapia.Application.Validators
                 .GreaterThan(DateTime.Now).WithMessage("Cita date must be in the future");
 
             RuleFor(a => a.Motivo)
-                .NotEmpty().WithMessage("Motivo for Cita is required")
                 .MaximumLength(200).WithMessage("Motivo cannot exceed 200 characters");
         }
     }

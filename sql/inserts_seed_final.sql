@@ -66,21 +66,21 @@ INSERT INTO Especialidades (Nombre, Descripcion, FechaCreacion)
 VALUES ('Terapia Ocupacional', 'Mejora de habilidades motoras y funcionales', NOW());
 SET @esp4Id = LAST_INSERT_ID();
 
--- 5) Terapeutas (varios, con especialidades)
-INSERT INTO Terapeutas (Nombres, Apellidos, EspecialidadId, Presentacion, Telefono, Direccion, Activo, FechaCreacion)
-VALUES ('Ana', 'López', @esp1Id, 'Fonoaudióloga con 8 años de experiencia', '912345678', 'Calle Falsa 45', 1, NOW());
+-- Se incluyen ahora DNI y Correo (ambos opcionales pero rellenados para consistencia)
+INSERT INTO Terapeutas (Nombres, Apellidos, DNI, Correo, EspecialidadId, Presentacion, Telefono, Direccion, Activo, FechaCreacion)
+VALUES ('Ana', 'López', '46881234', 'ana.lopez@centro.local', @esp1Id, 'Fonoaudióloga con 8 años de experiencia', '912345678', 'Calle Falsa 45', 1, NOW());
 SET @terapeuta1Id = LAST_INSERT_ID();
 
-INSERT INTO Terapeutas (Nombres, Apellidos, EspecialidadId, Presentacion, Telefono, Direccion, Activo, FechaCreacion)
-VALUES ('Raúl', 'Pérez', @esp3Id, 'Fisioterapeuta pediátrico', '912345679', 'Calle Real 12', 1, NOW());
+INSERT INTO Terapeutas (Nombres, Apellidos, DNI, Correo, EspecialidadId, Presentacion, Telefono, Direccion, Activo, FechaCreacion)
+VALUES ('Raúl', 'Pérez', '42119876', 'raul.perez@centro.local', @esp3Id, 'Fisioterapeuta pediátrico', '912345679', 'Calle Real 12', 1, NOW());
 SET @terapeuta2Id = LAST_INSERT_ID();
 
-INSERT INTO Terapeutas (Nombres, Apellidos, EspecialidadId, Presentacion, Telefono, Direccion, Activo, FechaCreacion)
-VALUES ('Marcos', 'García', @esp4Id, 'Terapeuta ocupacional', '912345680', 'Av. Central 7', 1, NOW());
+INSERT INTO Terapeutas (Nombres, Apellidos, DNI, Correo, EspecialidadId, Presentacion, Telefono, Direccion, Activo, FechaCreacion)
+VALUES ('Marcos', 'García', '47881222', 'marcos.garcia@centro.local', @esp4Id, 'Terapeuta ocupacional', '912345680', 'Av. Central 7', 1, NOW());
 SET @terapeuta3Id = LAST_INSERT_ID();
 
-INSERT INTO Terapeutas (Nombres, Apellidos, EspecialidadId, Presentacion, Telefono, Direccion, Activo, FechaCreacion)
-VALUES ('Elena', 'Suarez', @esp2Id, 'Psicóloga infantil', '912345681', 'Pza. Mayor 2', 1, NOW());
+INSERT INTO Terapeutas (Nombres, Apellidos, DNI, Correo, EspecialidadId, Presentacion, Telefono, Direccion, Activo, FechaCreacion)
+VALUES ('Elena', 'Suarez', '41223344', 'elena.suarez@centro.local', @esp2Id, 'Psicóloga infantil', '912345681', 'Pza. Mayor 2', 1, NOW());
 SET @terapeuta4Id = LAST_INSERT_ID();
 
 -- 6) Tipos de sesión (sesiones)
@@ -113,10 +113,10 @@ VALUES
 -- 8) Citas (usar `TipoSesionId` acorde a entidades actuales)
 INSERT INTO Citas (Fecha, Motivo, Estado, Notas, FechaCreacion, PacienteId, TerapeutaId, TipoSesionId, DuracionMinutos)
 VALUES
-('2025-12-25 10:00:00', 'Evaluación inicial de lenguaje', 'Scheduled', 'Traer informes médicos', NOW(), @paciente1, @terapeuta1Id, @tipo1Id, 45),
-('2025-12-26 09:30:00', 'Sesión de estimulación', 'Scheduled', NULL, NOW(), @paciente2, @terapeuta2Id, @tipo2Id, 45),
-('2025-12-27 11:00:00', 'Fisioterapia seguimiento', 'Scheduled', NULL, NOW(), @paciente3, @terapeuta2Id, @tipo3Id, 45),
-('2025-12-28 10:30:00', 'Terapia ocupacional', 'Scheduled', 'Evaluar motricidad fina', NOW(), @paciente4, @terapeuta3Id, @tipo4Id, 45);
+('2025-12-22 10:00:00', 'Evaluación inicial de lenguaje', 'Scheduled', 'Traer informes médicos', NOW(), @paciente1, @terapeuta1Id, @tipo1Id, 45),
+('2025-12-23 09:30:00', 'Sesión de estimulación', 'Scheduled', NULL, NOW(), @paciente2, @terapeuta2Id, @tipo3Id, 45), -- usa fisio pediátrica con Raúl
+('2025-12-24 11:00:00', 'Fisioterapia seguimiento', 'Scheduled', NULL, NOW(), @paciente3, @terapeuta2Id, @tipo3Id, 45),
+('2025-12-25 10:30:00', 'Terapia ocupacional', 'Scheduled', 'Evaluar motricidad fina', NOW(), @paciente4, @terapeuta3Id, @tipo4Id, 45);
 SET @cita1Id = LAST_INSERT_ID();
 
 -- 9) Notas de sesión (asociadas a citas)

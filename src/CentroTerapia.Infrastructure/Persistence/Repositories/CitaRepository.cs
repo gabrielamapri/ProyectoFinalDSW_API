@@ -56,6 +56,7 @@ namespace CentroTerapia.Infrastructure.Persistence.Repositories
                 .Include(a => a.Paciente)
                     .ThenInclude(p => p!.Familia)
                 .Include(a => a.TipoSesion)
+                    .ThenInclude(ts => ts.Especialidad)
                 .Include(a => a.Terapeuta)
                 .OrderByDescending(a => a.Fecha)
                 .ToListAsync();

@@ -4,7 +4,7 @@
     {
         public int Id { get; set; }
         public DateTime Fecha { get; set; }
-        public string Motivo { get; set; } = string.Empty;
+        public string? Motivo { get; set; }
         public string Estado { get; set; } = "Scheduled"; // Scheduled, Confirmed, Attended, NoShow, Cancelled
         public string? Notas { get; set; }
         public DateTime FechaCreacion { get; set; } = DateTime.Now;

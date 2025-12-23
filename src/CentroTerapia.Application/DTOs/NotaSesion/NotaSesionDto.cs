@@ -4,6 +4,7 @@ namespace CentroTerapia.Application.DTOs.NotaSesion
     {
         public int Id { get; set; }
         public int CitaId { get; set; }
+        public DateTime? CitaFecha { get; set; }
         public int TerapeutaId { get; set; }
         public string TerapeutaNombre { get; set; } = string.Empty;
         public string PacienteNombre { get; set; } = string.Empty;

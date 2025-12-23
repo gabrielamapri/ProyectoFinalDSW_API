@@ -16,10 +16,17 @@ namespace CentroTerapia.API.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<object>>> GetAll()
+        public async Task<ActionResult<IEnumerable<object>>> GetAll([FromQuery] string? search = null)
         {
-            var items = await _db.Especialidades
-                .AsNoTracking()
+            var query = _db.Especialidades.AsNoTracking();
+            
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var searchLower = search.ToLower().Trim();
+                query = query.Where(e => e.Nombre.ToLower().Contains(searchLower));
+            }
+            
+            var items = await query
                 .Select(e => new { e.Id, e.Nombre, e.Descripcion })
                 .ToListAsync();
             return Ok(items);

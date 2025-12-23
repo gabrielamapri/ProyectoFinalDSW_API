@@ -44,6 +44,21 @@ namespace CentroTerapia.Application.Services
             return _mapper.Map<IEnumerable<TipoSesionDto>>(items);
         }
 
+        public async Task<IEnumerable<TipoSesionDto>> GetAllAsync(string? search = null)
+        {
+            var items = await _unitOfWork.TiposSesion.GetAllAsync();
+            
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var searchLower = search.ToLower().Trim();
+                items = items.Where(t => 
+                    t.Nombre != null && t.Nombre.ToLower().Contains(searchLower)
+                ).ToList();
+            }
+            
+            return _mapper.Map<IEnumerable<TipoSesionDto>>(items);
+        }
+
         public async Task<TipoSesionDto> GetByIdAsync(int id)
         {
             var item = await _unitOfWork.TiposSesion.GetByIdAsync(id);

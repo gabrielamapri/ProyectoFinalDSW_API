@@ -19,9 +19,9 @@ namespace CentroTerapia.API.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<NotaSesionDto>>> GetAll()
+        public async Task<ActionResult<IEnumerable<NotaSesionDto>>> GetAll([FromQuery] string? search = null)
         {
-            var items = await _service.GetAllAsync();
+            var items = await _service.GetAllAsync(search);
             return Ok(items);
         }
 

@@ -5,6 +5,8 @@
         public int Id { get; set; }
         public string Nombres { get; set; } = string.Empty;
         public string Apellidos { get; set; } = string.Empty;
+        public string? DNI { get; set; }
+        public string? Correo { get; set; }
         // Replace free-text `Especialidades` with FK to `Especialidad`
         public int? EspecialidadId { get; set; }
         public Especialidad? Especialidad { get; set; }

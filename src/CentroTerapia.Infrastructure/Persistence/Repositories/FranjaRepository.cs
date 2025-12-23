@@ -15,6 +15,7 @@ namespace CentroTerapia.Infrastructure.Persistence.Repositories
         {
             return await _dbSet
                 .Include(f => f.Terapeuta)
+                    .ThenInclude(t => t.Especialidad)
                 .ToListAsync();
         }
 
@@ -22,6 +23,7 @@ namespace CentroTerapia.Infrastructure.Persistence.Repositories
         {
             return await _dbSet
                 .Include(f => f.Terapeuta)
+                    .ThenInclude(t => t.Especialidad)
                 .FirstOrDefaultAsync(f => f.Id == id);
         }
 

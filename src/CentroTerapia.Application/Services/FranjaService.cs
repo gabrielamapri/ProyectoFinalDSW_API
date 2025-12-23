@@ -44,6 +44,24 @@ namespace CentroTerapia.Application.Services
             var items = await _unitOfWork.Franjas.GetAllWithRelationsAsync();
             return _mapper.Map<IEnumerable<FranjaDisponibilidadDto>>(items);
         }
+
+        public async Task<IEnumerable<FranjaDisponibilidadDto>> GetAllAsync(string? search = null)
+        {
+            var items = await _unitOfWork.Franjas.GetAllWithRelationsAsync();
+            
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var searchLower = search.ToLower().Trim();
+                items = items.Where(f =>
+                    (f.Terapeuta != null && (f.Terapeuta.Nombres + " " + f.Terapeuta.Apellidos).ToLower().Contains(searchLower)) ||
+                    (f.Fecha.HasValue && f.Fecha.Value.ToString("yyyy-MM-dd").Contains(searchLower)) ||
+                    (f.Fecha.HasValue && f.Fecha.Value.ToString("dd/MM/yyyy").Contains(searchLower)) ||
+                    (f.DiaSemana.HasValue && f.DiaSemana.Value.ToString().Contains(searchLower))
+                ).ToList();
+            }
+            
+            return _mapper.Map<IEnumerable<FranjaDisponibilidadDto>>(items);
+        }
         public async Task<FranjaDisponibilidadDto> GetByIdAsync(int id)
         {
             var item = await _unitOfWork.Franjas.GetByIdWithRelationsAsync(id);

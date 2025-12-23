@@ -14,7 +14,6 @@ namespace CentroTerapia.Infrastructure.Persistence.Configurations
                 .IsRequired();
 
             builder.Property(a => a.Motivo)
-                .IsRequired()
                 .HasMaxLength(200);
 
             builder.Property(a => a.Estado)
@@ -30,8 +29,9 @@ namespace CentroTerapia.Infrastructure.Persistence.Configurations
             builder.HasIndex(a => a.PacienteId);
             builder.HasIndex(a => a.Fecha);
             builder.HasIndex(a => a.Estado);
-            // Ensure a therapist cannot have two appointments starting at the exact same datetime
-            builder.HasIndex(a => new { a.TerapeutaId, a.Fecha }).IsUnique();
+            builder.HasIndex(a => a.TerapeutaId);
+            // Non-unique index: therapists can now have back-to-back appointments; validation happens in service layer
+            builder.HasIndex(a => new { a.TerapeutaId, a.Fecha });
 
         }
     }

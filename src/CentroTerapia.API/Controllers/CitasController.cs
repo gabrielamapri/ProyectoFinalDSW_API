@@ -22,9 +22,9 @@ namespace CentroTerapia.API.Controllers
 
         [AllowAnonymous]
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<CitaDto>>> GetAll()
+        public async Task<ActionResult<IEnumerable<CitaDto>>> GetAll([FromQuery] string? search = null)
         {
-            var Citas = await _appointmentService.GetAllAsync();
+            var Citas = await _appointmentService.GetAllAsync(search);
             var citas = _mapper.Map<IEnumerable<CitaDto>>(Citas);
             return Ok(citas);
         }
@@ -132,6 +132,25 @@ namespace CentroTerapia.API.Controllers
             {
                 await _appointmentService.CancelAsync(id);
                 return Ok(new { message = "Cita cancelada" });
+            }
+            catch (NotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (BusinessRuleException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPatch("{id}/reprogramar")]
+        public async Task<ActionResult<CitaDto>> Reprogramar(int id, [FromBody] CentroTerapia.Application.DTOs.Cita.ReprogramCitaDto dto)
+        {
+            try
+            {
+                var Cita = await _appointmentService.ReprogramAsync(id, dto);
+                var cita = _mapper.Map<CitaDto>(Cita);
+                return Ok(cita);
             }
             catch (NotFoundException ex)
             {

@@ -6,6 +6,7 @@ namespace CentroTerapia.Application.Interfaces
     {
         Task<FranjaDisponibilidadDto> GetByIdAsync(int id);
         Task<IEnumerable<FranjaDisponibilidadDto>> GetAllAsync();
+        Task<IEnumerable<FranjaDisponibilidadDto>> GetAllAsync(string? search = null);
         Task<FranjaDisponibilidadDto> CreateAsync(CreateFranjaDto dto);
         Task<IEnumerable<FranjaExcepcionDto>> AddExceptionAsync(int franjaId, AddFranjaExcepcionDto dto);
         Task<bool> RemoveExceptionAsync(int franjaId, DateTime fecha);

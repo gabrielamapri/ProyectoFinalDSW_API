@@ -19,9 +19,9 @@ namespace CentroTerapia.API.Controllers
 
         [HttpGet]
         [AllowAnonymous]
-        public async Task<ActionResult<IEnumerable<TipoSesionDto>>> GetAll()
+        public async Task<ActionResult<IEnumerable<TipoSesionDto>>> GetAll([FromQuery] string? search = null)
         {
-            var items = await _service.GetAllAsync();
+            var items = await _service.GetAllAsync(search);
             return Ok(items);
         }
 

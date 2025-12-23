@@ -31,6 +31,7 @@ namespace CentroTerapia.Infrastructure.Persistence.Context
             modelBuilder.ApplyConfiguration(new CitaConfiguration());
             modelBuilder.ApplyConfiguration(new UserConfiguration());
             modelBuilder.ApplyConfiguration(new NotaSesionConfiguration());
+            modelBuilder.ApplyConfiguration(new TerapeutaConfiguration());
 
             // Apply default conventions for new entities
             modelBuilder.Entity<Especialidad>(eb =>

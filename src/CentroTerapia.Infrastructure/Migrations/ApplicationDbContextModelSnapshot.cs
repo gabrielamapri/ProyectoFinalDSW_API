@@ -45,7 +45,6 @@ namespace CentroTerapia.Infrastructure.Migrations
                         .HasColumnType("datetime(6)");
 
                     b.Property<string>("Motivo")
-                        .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("varchar(200)");
 
@@ -73,10 +72,11 @@ namespace CentroTerapia.Infrastructure.Migrations
 
                     b.HasIndex("PacienteId");
 
+                    b.HasIndex("TerapeutaId");
+
                     b.HasIndex("TipoSesionId");
 
-                    b.HasIndex("TerapeutaId", "Fecha")
-                        .IsUnique();
+                    b.HasIndex("TerapeutaId", "Fecha");
 
                     b.ToTable("Citas", (string)null);
                 });
@@ -316,11 +316,21 @@ namespace CentroTerapia.Infrastructure.Migrations
 
                     b.Property<string>("Apellidos")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<string>("Correo")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
 
                     b.Property<string>("Direccion")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<string>("DNI")
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
 
                     b.Property<int?>("EspecialidadId")
                         .HasColumnType("int");
@@ -330,17 +340,24 @@ namespace CentroTerapia.Infrastructure.Migrations
 
                     b.Property<string>("Nombres")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
 
                     b.Property<string>("Presentacion")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
 
                     b.Property<string>("Telefono")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Correo");
+
+                    b.HasIndex("DNI");
 
                     b.HasIndex("EspecialidadId");
 

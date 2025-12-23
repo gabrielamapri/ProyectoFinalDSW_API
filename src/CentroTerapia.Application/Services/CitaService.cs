@@ -44,6 +44,29 @@ namespace CentroTerapia.Application.Services;
         return _mapper.Map<IEnumerable<CitaDto>>(Citas);
     }
 
+    public async Task<IEnumerable<CitaDto>> GetAllAsync(string? search = null)
+    {
+        _logger.LogInformation("Retrieving Citas with search: {Search}", search ?? "(none)");
+        var Citas = await _unitOfWork.Citas.GetAllWithRelationsAsync();
+        
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var searchLower = search.ToLower().Trim();
+            Citas = Citas.Where(c =>
+                (c.Paciente != null && (c.Paciente.Nombres + " " + c.Paciente.Apellidos).ToLower().Contains(searchLower)) ||
+                (c.Terapeuta != null && (c.Terapeuta.Nombres + " " + c.Terapeuta.Apellidos).ToLower().Contains(searchLower)) ||
+                (c.TipoSesion != null && c.TipoSesion.Nombre != null && c.TipoSesion.Nombre.ToLower().Contains(searchLower)) ||
+                (c.TipoSesion != null && c.TipoSesion.Especialidad != null && c.TipoSesion.Especialidad.Nombre != null && c.TipoSesion.Especialidad.Nombre.ToLower().Contains(searchLower)) ||
+                (c.Estado != null && c.Estado.ToLower().Contains(searchLower)) ||
+                c.Fecha.ToString("yyyy-MM-dd").Contains(searchLower) ||
+                c.Fecha.ToString("dd/MM/yyyy").Contains(searchLower)
+            ).ToList();
+        }
+        
+        _logger.LogInformation("{Count} Citas retrieved after search.", Citas.Count());
+        return _mapper.Map<IEnumerable<CitaDto>>(Citas);
+    }
+
         public async Task<CitaDto> CreateAsync(CreateCitaDto dto)
     {
             _logger.LogInformation("Creating a new Cita for Paciente ID {PacienteID} on {Fecha}", dto.PacienteId, dto.Fecha);
@@ -110,7 +133,7 @@ namespace CentroTerapia.Application.Services;
                 var potential = await _unitOfWork.Citas.GetByDateRangeAsync(windowStart, windowEnd);
                 var newStart = dtoUtc;
                 var newEnd = dtoUtc.AddMinutes(duration);
-            var overlaps = potential.Where(a => a.TerapeutaId == dto.TerapeutaId)
+            var overlaps = potential.Where(a => a.TerapeutaId == dto.TerapeutaId && a.Estado != "Cancelled")
                 .Any(a =>
                 {
                     var existingStart = a.Fecha;
@@ -153,7 +176,7 @@ namespace CentroTerapia.Application.Services;
             }
 
                 // check 30-minute gap between patient's appointments (use UTC for DB-stored times)
-                foreach (var pA in patientAppointments)
+                foreach (var pA in patientAppointments.Where(a => a.Estado != "Cancelled"))
                 {
                     var existingStart = pA.Fecha;
                     var existingStartUtc = existingStart.Kind == DateTimeKind.Utc ? existingStart : DateTime.SpecifyKind(existingStart, DateTimeKind.Local).ToUniversalTime();
@@ -187,7 +210,7 @@ namespace CentroTerapia.Application.Services;
                 var potential = await _unitOfWork.Citas.GetByDateRangeAsync(windowStart, windowEnd);
                 var newStart = dtoUtc;
                 var newEnd = dtoUtc.AddMinutes(duration);
-                var overlapsNow = potential.Where(a => a.TerapeutaId == dto.TerapeutaId)
+                var overlapsNow = potential.Where(a => a.TerapeutaId == dto.TerapeutaId && a.Estado != "Cancelled")
                     .Any(a =>
                     {
                         var existingStart = a.Fecha;
@@ -229,7 +252,7 @@ namespace CentroTerapia.Application.Services;
                         }
                     }
                 }
-                    foreach (var pA in patientAppointmentsNow)
+                    foreach (var pA in patientAppointmentsNow.Where(a => a.Estado != "Cancelled"))
                     {
                         var existingStart = pA.Fecha;
                         var existingStartUtc = existingStart.Kind == DateTimeKind.Utc ? existingStart : DateTime.SpecifyKind(existingStart, DateTimeKind.Local).ToUniversalTime();
@@ -323,7 +346,7 @@ namespace CentroTerapia.Application.Services;
             var windowStart = newUtc.AddMinutes(-duration);
             var windowEnd = newUtc.AddMinutes(duration);
             var potential = await _unitOfWork.Citas.GetByDateRangeAsync(windowStart, windowEnd);
-            var overlaps = potential.Where(a => a.TerapeutaId == newTerapeutaId && a.Id != Cita.Id)
+            var overlaps = potential.Where(a => a.TerapeutaId == newTerapeutaId && a.Id != Cita.Id && a.Estado != "Cancelled")
                 .Any(a =>
                 {
                     var existingStart = a.Fecha;
@@ -439,6 +462,223 @@ namespace CentroTerapia.Application.Services;
 
         var Citas = await _unitOfWork.Citas.GetByStatusAsync(status);
         return _mapper.Map<IEnumerable<CitaDto>>(Citas);
+    }
+
+    public async Task<CitaDto> ReprogramAsync(int id, DTOs.Cita.ReprogramCitaDto dto)
+    {
+        var Cita = await _unitOfWork.Citas.GetWithPacienteAndFamiliaAsync(id);
+        if (Cita == null)
+        {
+            throw new NotFoundException("Cita", id);
+        }
+
+        // enforce 12-hour restriction from current scheduled time
+        var hoursUntil = (Cita.Fecha - DateTime.Now).TotalHours;
+        if (hoursUntil < 12)
+        {
+            throw new BusinessRuleException(
+                "RescheduleNotAllowed",
+                "No se puede anular o reprogramar citas con menos de 12 horas de anticipacion, Comunicarse via telefonica.");
+        }
+
+        // normalize incoming date
+        var newUtc = dto.Fecha.Kind == DateTimeKind.Utc ? dto.Fecha : dto.Fecha.ToUniversalTime();
+        var newLocal = newUtc.ToLocalTime();
+
+        if (newLocal <= DateTime.Now)
+        {
+            throw new BusinessRuleException(
+                "PastAppointment",
+                "Cannot reschedule to a past date.");
+        }
+
+        // determine duration
+        int duration = dto.DuracionMinutos ?? Cita.DuracionMinutos;
+        if (duration <= 0 && dto.DuracionMinutos == null && Cita.TipoSesionId.HasValue)
+        {
+            var tipo = await _unitOfWork.TiposSesion.GetByIdAsync(Cita.TipoSesionId.Value);
+            if (tipo != null) duration = tipo.DuracionMinutos;
+        }
+        if (duration <= 0) duration = Cita.DuracionMinutos > 0 ? Cita.DuracionMinutos : 45;
+
+        var terapeutaId = Cita.TerapeutaId;
+
+        // If therapist assigned, verify franja and overlaps
+        if (terapeutaId.HasValue)
+        {
+            var franjas = await _unitOfWork.Franjas.GetByTerapeutaIdAsync(terapeutaId.Value);
+            var appointmentTime = newLocal.TimeOfDay;
+            var appointmentEndTime = appointmentTime.Add(TimeSpan.FromMinutes(duration));
+
+            var covers = false;
+            foreach (var f in franjas)
+            {
+                var isApplicable = (f.Recurrente && f.DiaSemana.HasValue && f.DiaSemana.Value == (int)newLocal.DayOfWeek)
+                    || (!f.Recurrente && f.Fecha.HasValue && f.Fecha.Value.Date == newLocal.Date);
+                if (!isApplicable) continue;
+                var hasException = await _unitOfWork.Excepciones.ExistsAsync(f.Id, newLocal.Date);
+                if (hasException) continue;
+                if (appointmentTime >= f.HoraInicio && appointmentEndTime <= f.HoraFin)
+                {
+                    covers = true;
+                    break;
+                }
+            }
+
+            if (!covers)
+            {
+                throw new BusinessRuleException("NoAvailability", "No existe una franja disponible del terapeuta en la fecha/hora solicitada.");
+            }
+
+            // check overlaps excluding this appointment — therapists may be back-to-back
+            var windowStart = newUtc.AddMinutes(-duration);
+            var windowEnd = newUtc.AddMinutes(duration);
+            var potential = await _unitOfWork.Citas.GetByDateRangeAsync(windowStart, windowEnd);
+            var overlaps = potential.Where(a => a.TerapeutaId == terapeutaId && a.Id != Cita.Id && a.Estado != "Cancelled")
+                .Any(a =>
+                {
+                    var existingStart = a.Fecha;
+                    var existingStartUtc = existingStart.Kind == DateTimeKind.Utc ? existingStart : DateTime.SpecifyKind(existingStart, DateTimeKind.Local).ToUniversalTime();
+                    var existingDuration = a.DuracionMinutos > 0 ? a.DuracionMinutos : duration;
+                    var existingEndUtc = existingStartUtc.AddMinutes(existingDuration);
+                    var newStart = newUtc;
+                    var newEnd = newUtc.AddMinutes(duration);
+                    return existingStartUtc < newEnd && existingEndUtc > newStart;
+                });
+
+            if (overlaps)
+            {
+                throw new BusinessRuleException("ConflictoHorario", "El terapeuta tiene otra cita muy cercana o solapada en ese horario.");
+            }
+        }
+
+        // Patient-level rules: same-speciality per day and 30-minute gap
+        var dayStartCheck = newUtc.Date;
+        var dayEndCheck = newUtc.Date.AddDays(1).AddTicks(-1);
+        var patientAppointments = (await _unitOfWork.Citas.GetByDateRangeAsync(dayStartCheck, dayEndCheck)).Where(a => a.PacienteId == Cita.PacienteId && a.Id != Cita.Id).ToList();
+
+        if (patientAppointments.Any())
+        {
+            int? requestedEspecialidadId = null;
+            if (terapeutaId.HasValue)
+            {
+                var t = await _unitOfWork.Terapeutas.GetByIdAsync(terapeutaId.Value);
+                requestedEspecialidadId = t?.EspecialidadId;
+            }
+
+            if (requestedEspecialidadId.HasValue)
+            {
+                foreach (var pA in patientAppointments.Where(a => a.TerapeutaId.HasValue))
+                {
+                    var existingTer = await _unitOfWork.Terapeutas.GetByIdAsync(pA.TerapeutaId!.Value);
+                    if (existingTer != null && existingTer.EspecialidadId == requestedEspecialidadId.Value)
+                    {
+                        throw new BusinessRuleException("OnePerSpecialityPerDay", "Ya existe una cita para la misma especialidad en esa fecha.");
+                    }
+                }
+            }
+
+            foreach (var pA in patientAppointments.Where(a => a.Estado != "Cancelled"))
+            {
+                var existingStart = pA.Fecha;
+                var existingStartUtc = existingStart.Kind == DateTimeKind.Utc ? existingStart : DateTime.SpecifyKind(existingStart, DateTimeKind.Local).ToUniversalTime();
+                var existingDuration = pA.DuracionMinutos > 0 ? pA.DuracionMinutos : duration;
+                var existingEndUtc = existingStartUtc.AddMinutes(existingDuration);
+                var newStartUtc = newUtc;
+                var newEndUtc = newUtc.AddMinutes(duration);
+                var gapOk = existingEndUtc.AddMinutes(30) <= newStartUtc || newEndUtc.AddMinutes(30) <= existingStartUtc;
+                if (!gapOk)
+                {
+                    throw new BusinessRuleException("MinGap", "Debe haber al menos 30 minutos entre el fin de una cita y el inicio de la siguiente.");
+                }
+            }
+        }
+
+        // persist changes inside a transaction and re-check to avoid races
+        await _unitOfWork.BeginTransactionAsync();
+        try
+        {
+            // re-check therapist overlaps
+            if (terapeutaId.HasValue)
+            {
+                var windowStart = newUtc.AddMinutes(-duration);
+                var windowEnd = newUtc.AddMinutes(duration);
+                var potentialNow = await _unitOfWork.Citas.GetByDateRangeAsync(windowStart, windowEnd);
+                var overlapsNow = potentialNow.Where(a => a.TerapeutaId == terapeutaId && a.Id != Cita.Id && a.Estado != "Cancelled")
+                    .Any(a =>
+                    {
+                        var existingStart = a.Fecha;
+                        var existingStartUtc = existingStart.Kind == DateTimeKind.Utc ? existingStart : DateTime.SpecifyKind(existingStart, DateTimeKind.Local).ToUniversalTime();
+                        var existingDuration = a.DuracionMinutos > 0 ? a.DuracionMinutos : duration;
+                        var existingEndUtc = existingStartUtc.AddMinutes(existingDuration);
+                        var newStart = newUtc;
+                        var newEnd = newUtc.AddMinutes(duration);
+                        return existingStartUtc < newEnd && existingEndUtc > newStart;
+                    });
+                if (overlapsNow)
+                {
+                    await _unitOfWork.RollbackTransactionAsync();
+                    throw new BusinessRuleException("ConflictoHorario", "El terapeuta tiene otra cita muy cercana o solapada en ese horario.");
+                }
+            }
+
+            // re-check patient gaps for the day
+            dayStartCheck = newUtc.Date;
+            dayEndCheck = newUtc.Date.AddDays(1).AddTicks(-1);
+            var patientAppointmentsNow = (await _unitOfWork.Citas.GetByDateRangeAsync(dayStartCheck, dayEndCheck)).Where(a => a.PacienteId == Cita.PacienteId && a.Id != Cita.Id).ToList();
+            if (patientAppointmentsNow.Any())
+            {
+                int? requestedEspecialidadId = null;
+                if (terapeutaId.HasValue)
+                {
+                    var t = await _unitOfWork.Terapeutas.GetByIdAsync(terapeutaId.Value);
+                    requestedEspecialidadId = t?.EspecialidadId;
+                }
+                if (requestedEspecialidadId.HasValue)
+                {
+                    foreach (var pA in patientAppointmentsNow.Where(a => a.TerapeutaId.HasValue))
+                    {
+                        var existingTer = await _unitOfWork.Terapeutas.GetByIdAsync(pA.TerapeutaId!.Value);
+                        if (existingTer != null && existingTer.EspecialidadId == requestedEspecialidadId.Value)
+                        {
+                            await _unitOfWork.RollbackTransactionAsync();
+                            throw new BusinessRuleException("OnePerSpecialityPerDay", "Ya existe una cita para la misma especialidad en esa fecha.");
+                        }
+                    }
+                }
+                foreach (var pA in patientAppointmentsNow.Where(a => a.Estado != "Cancelled"))
+                {
+                    var existingStart = pA.Fecha;
+                    var existingStartUtc = existingStart.Kind == DateTimeKind.Utc ? existingStart : DateTime.SpecifyKind(existingStart, DateTimeKind.Local).ToUniversalTime();
+                    var existingDuration = pA.DuracionMinutos > 0 ? pA.DuracionMinutos : duration;
+                    var existingEndUtc = existingStartUtc.AddMinutes(existingDuration);
+                    var newStartUtc = newUtc;
+                    var newEndUtc = newUtc.AddMinutes(duration);
+                    var gapOk = existingEndUtc.AddMinutes(30) <= newStartUtc || newEndUtc.AddMinutes(30) <= existingStartUtc;
+                    if (!gapOk)
+                    {
+                        await _unitOfWork.RollbackTransactionAsync();
+                        throw new BusinessRuleException("MinGap", "Debe haber al menos 30 minutos entre el fin de una cita y el inicio de la siguiente.");
+                    }
+                }
+            }
+
+            // apply changes
+            Cita.Fecha = DateTime.SpecifyKind(newLocal, DateTimeKind.Unspecified);
+            Cita.DuracionMinutos = duration;
+
+            var updated = await _unitOfWork.Citas.UpdateAsync(Cita);
+            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.CommitTransactionAsync();
+
+            var appointmentWithDetails = await _unitOfWork.Citas.GetWithPacienteAndFamiliaAsync(updated.Id);
+            return _mapper.Map<CitaDto>(appointmentWithDetails!);
+        }
+        catch
+        {
+            try { await _unitOfWork.RollbackTransactionAsync(); } catch { }
+            throw;
+        }
     }
 }
 

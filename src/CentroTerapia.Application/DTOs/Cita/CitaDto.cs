@@ -13,6 +13,7 @@
         public bool PuedeSerCancelada { get; set; }
         public int? TipoSesionId { get; set; }
         public string TipoSesionNombre { get; set; } = string.Empty;
+        public string EspecialidadNombre { get; set; } = string.Empty;
         public int? TerapeutaId { get; set; }
         public string TerapeutaNombre { get; set; } = string.Empty;
         public int DuracionMinutos { get; set; }

@@ -7,8 +7,10 @@ namespace CentroTerapia.Application.Interfaces
     {
         Task<CitaDto> GetByIdAsync(int id);
         Task<IEnumerable<CitaDto>> GetAllAsync();
+        Task<IEnumerable<CitaDto>> GetAllAsync(string? search = null);
         Task<CitaDto> CreateAsync(CreateCitaDto citaDto);
         Task<CitaDto> UpdateAsync(int id, UpdateCitaDto citaDto);
+        Task<CitaDto> ReprogramAsync(int id, ReprogramCitaDto dto);
         Task<bool> DeleteAsync(int id);
         Task<bool> CancelAsync(int id);
 

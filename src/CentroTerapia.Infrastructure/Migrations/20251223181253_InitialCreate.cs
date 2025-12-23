@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 
@@ -100,32 +100,6 @@ namespace CentroTerapia.Infrastructure.Migrations
                 .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateTable(
-                name: "TiposSesion",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    Nombre = table.Column<string>(type: "longtext", nullable: false)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
-                    DuracionMinutos = table.Column<int>(type: "int", nullable: false),
-                    EspecialidadId = table.Column<int>(type: "int", nullable: false),
-                    Precio = table.Column<decimal>(type: "decimal(65,30)", nullable: true),
-                    Descripcion = table.Column<string>(type: "longtext", nullable: false)
-                        .Annotation("MySql:CharSet", "utf8mb4")
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_TiposSesion", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_TiposSesion_Especialidades_EspecialidadId",
-                        column: x => x.EspecialidadId,
-                        principalTable: "Especialidades",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                })
-                .Annotation("MySql:CharSet", "utf8mb4");
-
-            migrationBuilder.CreateTable(
                 name: "Users",
                 columns: table => new
                 {
@@ -156,16 +130,20 @@ namespace CentroTerapia.Infrastructure.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    Nombres = table.Column<string>(type: "longtext", nullable: false)
+                    Nombres = table.Column<string>(type: "varchar(50)", maxLength: 50, nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    Apellidos = table.Column<string>(type: "longtext", nullable: false)
+                    Apellidos = table.Column<string>(type: "varchar(50)", maxLength: 50, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    DNI = table.Column<string>(type: "varchar(20)", maxLength: 20, nullable: true)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    Correo = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     EspecialidadId = table.Column<int>(type: "int", nullable: true),
-                    Presentacion = table.Column<string>(type: "longtext", nullable: false)
+                    Presentacion = table.Column<string>(type: "varchar(500)", maxLength: 500, nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    Telefono = table.Column<string>(type: "longtext", nullable: false)
+                    Telefono = table.Column<string>(type: "varchar(20)", maxLength: 20, nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    Direccion = table.Column<string>(type: "longtext", nullable: false)
+                    Direccion = table.Column<string>(type: "varchar(200)", maxLength: 200, nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     Activo = table.Column<bool>(type: "tinyint(1)", nullable: false),
                     FechaCreacion = table.Column<DateTime>(type: "datetime(6)", nullable: false)
@@ -179,6 +157,32 @@ namespace CentroTerapia.Infrastructure.Migrations
                         principalTable: "Especialidades",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.SetNull);
+                })
+                .Annotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.CreateTable(
+                name: "TiposSesion",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    Nombre = table.Column<string>(type: "longtext", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    DuracionMinutos = table.Column<int>(type: "int", nullable: false),
+                    Precio = table.Column<decimal>(type: "decimal(65,30)", nullable: true),
+                    Descripcion = table.Column<string>(type: "longtext", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    EspecialidadId = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_TiposSesion", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_TiposSesion_Especialidades_EspecialidadId",
+                        column: x => x.EspecialidadId,
+                        principalTable: "Especialidades",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
 
@@ -199,9 +203,9 @@ namespace CentroTerapia.Infrastructure.Migrations
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     NumeroContactoEmergencia = table.Column<string>(type: "longtext", nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
+                    FamiliaId = table.Column<int>(type: "int", nullable: true),
                     DNI = table.Column<string>(type: "longtext", nullable: false)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
-                    FamiliaId = table.Column<int>(type: "int", nullable: true)
+                        .Annotation("MySql:CharSet", "utf8mb4")
                 },
                 constraints: table =>
                 {
@@ -210,8 +214,7 @@ namespace CentroTerapia.Infrastructure.Migrations
                         name: "FK_Pacientes_Familias_FamiliaId",
                         column: x => x.FamiliaId,
                         principalTable: "Familias",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
+                        principalColumn: "Id");
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
 
@@ -241,37 +244,13 @@ namespace CentroTerapia.Infrastructure.Migrations
                 .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateTable(
-                name: "FranjaExcepciones",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    CreatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false),
-                    Fecha = table.Column<DateTime>(type: "datetime(6)", nullable: false),
-                    FranjaId = table.Column<int>(type: "int", nullable: false),
-                    Motivo = table.Column<string>(type: "longtext", nullable: true)
-                        .Annotation("MySql:CharSet", "utf8mb4")
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_FranjaExcepciones", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_FranjaExcepciones_FranjasDisponibilidad_FranjaId",
-                        column: x => x.FranjaId,
-                        principalTable: "FranjasDisponibilidad",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                })
-                .Annotation("MySql:CharSet", "utf8mb4");
-
-            migrationBuilder.CreateTable(
                 name: "Citas",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
                     Fecha = table.Column<DateTime>(type: "datetime(6)", nullable: false),
-                    Motivo = table.Column<string>(type: "varchar(200)", maxLength: 200, nullable: false)
+                    Motivo = table.Column<string>(type: "varchar(200)", maxLength: 200, nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     Estado = table.Column<string>(type: "varchar(50)", maxLength: 50, nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
@@ -303,6 +282,30 @@ namespace CentroTerapia.Infrastructure.Migrations
                         column: x => x.TipoSesionId,
                         principalTable: "TiposSesion",
                         principalColumn: "Id");
+                })
+                .Annotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.CreateTable(
+                name: "FranjaExcepciones",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    FranjaId = table.Column<int>(type: "int", nullable: false),
+                    Fecha = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    Motivo = table.Column<string>(type: "longtext", nullable: true)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    CreatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_FranjaExcepciones", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_FranjaExcepciones_FranjasDisponibilidad_FranjaId",
+                        column: x => x.FranjaId,
+                        principalTable: "FranjasDisponibilidad",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
 
@@ -357,14 +360,19 @@ namespace CentroTerapia.Infrastructure.Migrations
                 column: "TerapeutaId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Citas_TerapeutaId_Fecha",
+                table: "Citas",
+                columns: new[] { "TerapeutaId", "Fecha" });
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Citas_TipoSesionId",
                 table: "Citas",
                 column: "TipoSesionId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Citas_TerapeutaId_Fecha",
-                table: "Citas",
-                columns: new[] { "TerapeutaId", "Fecha" },
+                name: "IX_FranjaExcepciones_FranjaId_Fecha",
+                table: "FranjaExcepciones",
+                columns: new[] { "FranjaId", "Fecha" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -383,12 +391,6 @@ namespace CentroTerapia.Infrastructure.Migrations
                 column: "TerapeutaId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_FranjaExcepciones_FranjaId_Fecha",
-                table: "FranjaExcepciones",
-                columns: new[] { "FranjaId", "Fecha" },
-                unique: true);
-
-            migrationBuilder.CreateIndex(
                 name: "IX_Pacientes_FamiliaId",
                 table: "Pacientes",
                 column: "FamiliaId");
@@ -397,6 +399,16 @@ namespace CentroTerapia.Infrastructure.Migrations
                 name: "IX_Terapeutas_EspecialidadId",
                 table: "Terapeutas",
                 column: "EspecialidadId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Terapeutas_Correo",
+                table: "Terapeutas",
+                column: "Correo");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Terapeutas_DNI",
+                table: "Terapeutas",
+                column: "DNI");
 
             migrationBuilder.CreateIndex(
                 name: "IX_TiposSesion_EspecialidadId",
@@ -417,9 +429,6 @@ namespace CentroTerapia.Infrastructure.Migrations
                 name: "FranjaExcepciones");
 
             migrationBuilder.DropTable(
-                name: "FranjasDisponibilidad");
-
-            migrationBuilder.DropTable(
                 name: "NotaSesion");
 
             migrationBuilder.DropTable(
@@ -427,6 +436,9 @@ namespace CentroTerapia.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "Users");
+
+            migrationBuilder.DropTable(
+                name: "FranjasDisponibilidad");
 
             migrationBuilder.DropTable(
                 name: "Citas");

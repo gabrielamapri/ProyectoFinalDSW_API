@@ -44,6 +44,26 @@ namespace CentroTerapia.Application.Services
             return _mapper.Map<IEnumerable<NotaSesionDto>>(items);
         }
 
+        public async Task<IEnumerable<NotaSesionDto>> GetAllAsync(string? search = null)
+        {
+            var items = await _unitOfWork.NotasSesion.GetAllAsync();
+            
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var searchLower = search.ToLower().Trim();
+                items = items.Where(n =>
+                    (n.Cita != null && n.Cita.Paciente != null && (n.Cita.Paciente.Nombres + " " + n.Cita.Paciente.Apellidos).ToLower().Contains(searchLower)) ||
+                    (n.Terapeuta != null && (n.Terapeuta.Nombres + " " + n.Terapeuta.Apellidos).ToLower().Contains(searchLower)) ||
+                    (n.Cita != null && n.Cita.Fecha.ToString("yyyy-MM-dd").Contains(searchLower)) ||
+                    (n.Cita != null && n.Cita.Fecha.ToString("dd/MM/yyyy").Contains(searchLower)) ||
+                    (n.FechaCreacion.ToString("yyyy-MM-dd").Contains(searchLower)) ||
+                    (n.FechaCreacion.ToString("dd/MM/yyyy").Contains(searchLower))
+                ).ToList();
+            }
+            
+            return _mapper.Map<IEnumerable<NotaSesionDto>>(items);
+        }
+
         public async Task<NotaSesionDto> GetByIdAsync(int id)
         {
             var item = await _unitOfWork.NotasSesion.GetByIdAsync(id);
