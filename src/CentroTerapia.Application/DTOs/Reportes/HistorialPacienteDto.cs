@@ -4,9 +4,12 @@ namespace CentroTerapia.Application.DTOs.Reportes
     {
         public int PacienteId { get; set; }
         public string PacienteNombre { get; set; } = string.Empty;
+        public string PacienteDNI { get; set; } = string.Empty;
         public int Edad { get; set; }
-        public string Especialidad { get; set; } = string.Empty;
-        public string TerapeutaNombre { get; set; } = string.Empty;
+        public string ResponsableNombre { get; set; } = string.Empty;
+        public string ResponsableDNI { get; set; } = string.Empty;
+        public string ResponsableTelefono { get; set; } = string.Empty;
+        public string ResponsableEmail { get; set; } = string.Empty;
         public int TotalCitas { get; set; }
         public int CitasCompletadas { get; set; }
         public int CitasCanceladas { get; set; }
@@ -21,9 +24,10 @@ namespace CentroTerapia.Application.DTOs.Reportes
         public int CitaId { get; set; }
         public DateTime Fecha { get; set; }
         public string Estado { get; set; } = string.Empty;
-        public string Motivo { get; set; } = string.Empty;
         public string TerapeutaNombre { get; set; } = string.Empty;
-        public int DuracionMinutos { get; set; }
+        public string Especialidad { get; set; } = string.Empty;
+        public string TipoSesion { get; set; } = string.Empty;
+        public string Notas { get; set; } = string.Empty;
     }
 
     public class NotaHistorialDto

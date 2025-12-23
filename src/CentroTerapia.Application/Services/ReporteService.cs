@@ -32,38 +32,62 @@ namespace CentroTerapia.Application.Services
                 if (paciente == null)
                     throw new NotFoundException($"Paciente con ID {pacienteId} no encontrado", pacienteId);
 
+                // Cargar familia del paciente
+                string responsableNombre = "";
+                string responsableDNI = "";
+                string responsableTelefono = "";
+                string responsableEmail = "";
+
+                if (paciente.FamiliaId.HasValue)
+                {
+                    var familia = await _familiaService.GetByIdAsync(paciente.FamiliaId.Value);
+                    if (familia != null)
+                    {
+                        responsableNombre = $"{familia.ResponsablePrincipalNombre ?? ""} {familia.ResponsablePrincipalApellido ?? ""}".Trim();
+                        responsableDNI = familia.ResponsablePrincipalDNI ?? "";
+                        responsableTelefono = familia.ResponsablePrincipalTelefono ?? familia.TelefonoContacto ?? "";
+                        responsableEmail = familia.ResponsablePrincipalEmail ?? "";
+                    }
+                }
+
                 var citas = await _citaService.GetByPacienteIdAsync(pacienteId);
                 var citasOrdenadas = citas.OrderByDescending(c => c.Fecha).ToList();
                 var totalCitas = citasOrdenadas.Count;
                 var citasPaginadas = citasOrdenadas.Skip((page - 1) * pageSize).Take(pageSize).ToList();
 
-                // Notas recientes
-                var notasRecientes = new List<NotaHistorialDto>(); // Simplificado por ahora
-
-                var especialidad = citasOrdenadas.FirstOrDefault()?.EspecialidadNombre ?? "N/A";
-                var terapeutaNombre = citasOrdenadas.FirstOrDefault()?.TerapeutaNombre ?? "N/A";
+                // Obtener notas de sesión para las citas paginadas
+                var todasLasNotas = await _notaSesionService.GetAllAsync();
+                var citasConNotas = citasPaginadas.Select(c =>
+                {
+                    var nota = todasLasNotas.FirstOrDefault(n => n.CitaId == c.Id);
+                    return new CitaHistorialDto
+                    {
+                        CitaId = c.Id,
+                        Fecha = c.Fecha,
+                        Estado = c.Estado,
+                        TerapeutaNombre = c.TerapeutaNombre ?? "N/A",
+                        Especialidad = c.EspecialidadNombre ?? "N/A",
+                        TipoSesion = c.TipoSesionNombre ?? "N/A",
+                        Notas = nota?.Notas ?? ""
+                    };
+                }).ToList();
 
                 return new HistorialPacienteDto
                 {
                     PacienteId = paciente.Id,
                     PacienteNombre = $"{paciente.Nombres} {paciente.Apellidos}",
+                    PacienteDNI = paciente.DNI ?? "",
                     Edad = paciente.AgeInYears,
-                    Especialidad = especialidad,
-                    TerapeutaNombre = terapeutaNombre,
+                    ResponsableNombre = responsableNombre,
+                    ResponsableDNI = responsableDNI,
+                    ResponsableTelefono = responsableTelefono,
+                    ResponsableEmail = responsableEmail,
                     TotalCitas = totalCitas,
                     CitasCompletadas = citasOrdenadas.Count(c => c.Estado == "Completed"),
                     CitasCanceladas = citasOrdenadas.Count(c => c.Estado == "Cancelled"),
                     CitasProgramadas = citasOrdenadas.Count(c => c.Estado == "Scheduled"),
-                    Citas = citasPaginadas.Select(c => new CitaHistorialDto
-                    {
-                        CitaId = c.Id,
-                        Fecha = c.Fecha,
-                        Estado = c.Estado,
-                        Motivo = c.Motivo ?? "N/A",
-                        TerapeutaNombre = c.TerapeutaNombre,
-                        DuracionMinutos = c.DuracionMinutos
-                    }).ToList(),
-                    NotasRecientes = notasRecientes,
+                    Citas = citasConNotas,
+                    NotasRecientes = new List<NotaHistorialDto>(),
                     Pagination = new PaginationDto
                     {
                         Page = page,
