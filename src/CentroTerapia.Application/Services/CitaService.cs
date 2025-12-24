@@ -464,6 +464,19 @@ namespace CentroTerapia.Application.Services;
         return _mapper.Map<IEnumerable<CitaDto>>(Citas);
     }
 
+    public async Task<IEnumerable<CitaAlertaDto>> GetByTerapeutaAndDateRangeAsync(int terapeutaId, DateTime startDate, DateTime endDate)
+    {
+        if (startDate > endDate)
+        {
+            throw new BusinessRuleException(
+                "InvalidDateRange",
+                "Start date must be before end date.");
+        }
+
+        var citas = await _unitOfWork.Citas.GetByTerapeutaAndDateRangeAsync(terapeutaId, startDate, endDate);
+        return _mapper.Map<IEnumerable<CitaAlertaDto>>(citas);
+    }
+
     public async Task<CitaDto> ReprogramAsync(int id, DTOs.Cita.ReprogramCitaDto dto)
     {
         var Cita = await _unitOfWork.Citas.GetWithPacienteAndFamiliaAsync(id);

@@ -13,6 +13,7 @@ namespace CentroTerapia.Domain.Ports.Out
         Task<IEnumerable<Cita>> GetAllWithRelationsAsync();
         // Efficient existence check for citas asociadas a un terapeuta
         Task<bool> AnyByTerapeutaIdAsync(int terapeutaId);
+        Task<IEnumerable<Cita>> GetByTerapeutaAndDateRangeAsync(int terapeutaId, DateTime startDate, DateTime endDate);
     }
 }
 

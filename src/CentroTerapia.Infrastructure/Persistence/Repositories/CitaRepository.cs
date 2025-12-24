@@ -75,6 +75,17 @@ namespace CentroTerapia.Infrastructure.Persistence.Repositories
         {
             return await _dbSet.AnyAsync(a => a.TerapeutaId == terapeutaId);
         }
+
+        public async Task<IEnumerable<Cita>> GetByTerapeutaAndDateRangeAsync(int terapeutaId, DateTime startDate, DateTime endDate)
+        {
+            return await _dbSet
+                .Where(a => a.TerapeutaId == terapeutaId && a.Fecha >= startDate && a.Fecha <= endDate && a.Estado == "Scheduled")
+                .Include(a => a.Paciente)
+                    .ThenInclude(p => p!.Familia)
+                .Include(a => a.TipoSesion)
+                .OrderBy(a => a.Fecha)
+                .ToListAsync();
+        }
     }
 }
 

@@ -54,8 +54,8 @@ namespace CentroTerapia.Application.Services
 
         public async Task<bool> DeleteAsync(int id)
         {
-            var exists = await _unitOfWork.Pacientes.ExistsAsync(id);
-            if (!exists) throw new NotFoundException("Paciente", id);
+            var paciente = await _unitOfWork.Pacientes.GetByIdAsync(id);
+            if (paciente == null) throw new NotFoundException("Paciente", id);
 
             // Bloquear eliminación si tiene historial de citas (cualquier estado)
             var citas = await _unitOfWork.Citas.GetByPacienteIdAsync(id) ?? Enumerable.Empty<Domain.Entities.Cita>();
@@ -66,8 +66,30 @@ namespace CentroTerapia.Application.Services
                     "No se puede eliminar. Tiene historial asociado.");
             }
 
+            // Obtener la familia del paciente (si tiene)
+            var familiaId = paciente.FamiliaId;
+
+            // Eliminar el paciente
             var result = await _unitOfWork.Pacientes.DeleteAsync(id);
             await _unitOfWork.SaveChangesAsync();
+
+            // Si el paciente tenía familia, verificar si era el único asociado
+            if (familiaId.HasValue)
+            {
+                var otrosPacientes = await _unitOfWork.Pacientes.GetByFamiliaIdAsync(familiaId.Value) ?? Enumerable.Empty<Domain.Entities.Paciente>();
+                
+                // Si no hay más pacientes en esa familia, eliminar la familia
+                if (!otrosPacientes.Any())
+                {
+                    var familiaExiste = await _unitOfWork.Familias.ExistsAsync(familiaId.Value);
+                    if (familiaExiste)
+                    {
+                        await _unitOfWork.Familias.DeleteAsync(familiaId.Value);
+                        await _unitOfWork.SaveChangesAsync();
+                    }
+                }
+            }
+
             return result;
         }
 

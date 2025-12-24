@@ -17,6 +17,7 @@ namespace CentroTerapia.Application.Interfaces
         Task<IEnumerable<CitaDto>> GetByPacienteIdAsync(int pacienteId);
         Task<IEnumerable<CitaDto>> GetByDateRangeAsync(DateTime startDate, DateTime endDate);
         Task<IEnumerable<CitaDto>> GetByStatusAsync(string status);
+        Task<IEnumerable<CitaAlertaDto>> GetByTerapeutaAndDateRangeAsync(int terapeutaId, DateTime startDate, DateTime endDate);
     }
 }
 

@@ -58,6 +58,27 @@ namespace CentroTerapia.Application.Mappings
                 .ForMember(dest => dest.DuracionMinutos, opt => opt.MapFrom(src => src.DuracionMinutos))
                 .ForMember(dest => dest.Precio, opt => opt.MapFrom(src => src.TipoSesion != null ? (decimal?)src.TipoSesion.Precio : null));
 
+            CreateMap<Cita, CitaAlertaDto>()
+                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
+                .ForMember(dest => dest.Fecha, opt => opt.MapFrom(src => src.Fecha))
+                .ForMember(dest => dest.PacienteId, opt => opt.MapFrom(src => src.PacienteId))
+                .ForMember(dest => dest.PacienteNombre, opt => opt.MapFrom(src => src.Paciente != null ? (src.Paciente.Nombres + " " + src.Paciente.Apellidos) : string.Empty))
+                .ForMember(dest => dest.ResponsableNombre, opt => opt.MapFrom(src => src.Paciente != null && src.Paciente.Familia != null ? ((src.Paciente.Familia.ResponsablePrincipalNombre ?? string.Empty) + " " + (src.Paciente.Familia.ResponsablePrincipalApellido ?? string.Empty)) : string.Empty))
+                .ForMember(dest => dest.ResponsableTelefono, opt => opt.MapFrom(src =>
+                    src.Paciente != null && src.Paciente.Familia != null
+                        ? (!string.IsNullOrWhiteSpace(src.Paciente.Familia.ResponsablePrincipalTelefono)
+                            ? src.Paciente.Familia.ResponsablePrincipalTelefono!
+                            : (!string.IsNullOrWhiteSpace(src.Paciente.Familia.TelefonoContacto)
+                                ? src.Paciente.Familia.TelefonoContacto!
+                                : (!string.IsNullOrWhiteSpace(src.Paciente.Familia.Responsable2Telefono)
+                                    ? src.Paciente.Familia.Responsable2Telefono!
+                                    : (src.Paciente.NumeroContactoEmergencia ?? string.Empty))))
+                        : (src.Paciente != null ? (src.Paciente.NumeroContactoEmergencia ?? string.Empty) : string.Empty)))
+                .ForMember(dest => dest.ResponsableEmail, opt => opt.MapFrom(src => src.Paciente != null && src.Paciente.Familia != null ? (src.Paciente.Familia.ResponsablePrincipalEmail ?? string.Empty) : string.Empty))
+                .ForMember(dest => dest.Estado, opt => opt.MapFrom(src => src.Estado))
+                .ForMember(dest => dest.TipoSesionId, opt => opt.MapFrom(src => src.TipoSesionId))
+                .ForMember(dest => dest.TipoSesionNombre, opt => opt.MapFrom(src => src.TipoSesion != null ? src.TipoSesion.Nombre : string.Empty));
+
             CreateMap<CreatePacienteDto, Paciente>()
                 .ForMember(dest => dest.Nombres, opt => opt.MapFrom(src => src.Nombres))
                 .ForMember(dest => dest.Apellidos, opt => opt.MapFrom(src => src.Apellidos))
@@ -166,6 +187,20 @@ namespace CentroTerapia.Application.Mappings
             CreateMap<FranjaExcepcion, CentroTerapia.Application.DTOs.Franja.FranjaExcepcionDto>()
                 .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
                 .ForMember(dest => dest.FranjaId, opt => opt.MapFrom(src => src.FranjaId))
+                .ForMember(dest => dest.Fecha, opt => opt.MapFrom(src => src.Fecha))
+                .ForMember(dest => dest.Motivo, opt => opt.MapFrom(src => src.Motivo))
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt));
+
+            CreateMap<FranjaExcepcion, CentroTerapia.Application.DTOs.Franja.FranjaExcepcionDetalleDto>()
+                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
+                .ForMember(dest => dest.FranjaId, opt => opt.MapFrom(src => src.FranjaId))
+                .ForMember(dest => dest.TerapeutaId, opt => opt.MapFrom(src => src.Franja != null ? src.Franja.TerapeutaId : 0))
+                .ForMember(dest => dest.TerapeutaNombre, opt => opt.MapFrom(src => src.Franja != null && src.Franja.Terapeuta != null ? (src.Franja.Terapeuta.Nombres + " " + src.Franja.Terapeuta.Apellidos).Trim() : string.Empty))
+                .ForMember(dest => dest.FechaFranja, opt => opt.MapFrom(src => src.Franja != null ? src.Franja.Fecha : (DateTime?)null))
+                .ForMember(dest => dest.DiaSemana, opt => opt.MapFrom(src => src.Franja != null ? src.Franja.DiaSemana : (int?)null))
+                .ForMember(dest => dest.HoraInicio, opt => opt.MapFrom(src => src.Franja != null ? src.Franja.HoraInicio : TimeSpan.Zero))
+                .ForMember(dest => dest.HoraFin, opt => opt.MapFrom(src => src.Franja != null ? src.Franja.HoraFin : TimeSpan.Zero))
+                .ForMember(dest => dest.Recurrente, opt => opt.MapFrom(src => src.Franja != null && src.Franja.Recurrente))
                 .ForMember(dest => dest.Fecha, opt => opt.MapFrom(src => src.Fecha))
                 .ForMember(dest => dest.Motivo, opt => opt.MapFrom(src => src.Motivo))
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt));
