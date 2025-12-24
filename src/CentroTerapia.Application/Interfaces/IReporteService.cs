@@ -10,16 +10,7 @@ namespace CentroTerapia.Application.Interfaces
         // 1b. Exportar Historial a PDF
         Task<byte[]> ExportHistorialPacienteAsync(int pacienteId);
 
-        // 2. Control de Asistencia
-        Task<ControlAsistenciaDto> GetControlAsistenciaAsync(DateTime fechaInicio, DateTime fechaFin);
-
-        // 3. Estado de Cuenta Familia
-        Task<EstadoCuentaFamiliaDto> GetEstadoCuentaFamiliaAsync(int familiaId);
-
-        // 4. Reporte de Progreso del Niño (para padres)
-        Task<ReporteProgresoNinoDto> GetReporteProgresoNinoAsync(int pacienteId, int mes, int año);
-
-        // 5. Citas Próximas a Confirmar
+        // 2. Citas Próximas a Confirmar
         Task<CitasProximasDto> GetCitasProximasAsync(DateTime fechaDesde, DateTime fechaHasta, int? especialidadId = null, int? terapeutaId = null, int? tipoSesionId = null);
         Task<byte[]> ExportCitasProximasAsync(DateTime fechaDesde, DateTime fechaHasta, int? especialidadId = null, int? terapeutaId = null, int? tipoSesionId = null);
     }

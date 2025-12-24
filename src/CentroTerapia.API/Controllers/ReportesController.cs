@@ -64,80 +64,7 @@ namespace CentroTerapia.API.Controllers
         }
 
         /// <summary>
-        /// 2. Obtiene control de asistencia en un rango de fechas
-        /// </summary>
-        [HttpGet("control-asistencia")]
-        public async Task<ActionResult<ControlAsistenciaDto>> GetControlAsistencia(
-            [FromQuery] DateTime fechaInicio,
-            [FromQuery] DateTime fechaFin)
-        {
-            try
-            {
-                if (fechaInicio > fechaFin)
-                    return BadRequest(new { message = "La fecha de inicio debe ser menor o igual a la fecha de fin" });
-
-                var reporte = await _reporteService.GetControlAsistenciaAsync(fechaInicio, fechaFin);
-                return Ok(reporte);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-        }
-
-        /// <summary>
-        /// 3. Obtiene el estado de cuenta de una familia
-        /// </summary>
-        [HttpGet("estado-cuenta-familia/{familiaId}")]
-        public async Task<ActionResult<EstadoCuentaFamiliaDto>> GetEstadoCuentaFamilia(int familiaId)
-        {
-            try
-            {
-                var reporte = await _reporteService.GetEstadoCuentaFamiliaAsync(familiaId);
-                return Ok(reporte);
-            }
-            catch (NotFoundException ex)
-            {
-                return NotFound(new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-        }
-
-        /// <summary>
-        /// 4. Obtiene reporte de progreso del niño (para padres)
-        /// </summary>
-        [HttpGet("progreso-nino/{pacienteId}")]
-        public async Task<ActionResult<ReporteProgresoNinoDto>> GetReporteProgresoNino(
-            int pacienteId,
-            [FromQuery] int mes,
-            [FromQuery] int año)
-        {
-            try
-            {
-                if (mes < 1 || mes > 12)
-                    return BadRequest(new { message = "El mes debe estar entre 1 y 12" });
-
-                if (año < 2000 || año > DateTime.Now.Year + 1)
-                    return BadRequest(new { message = "El año no es válido" });
-
-                var reporte = await _reporteService.GetReporteProgresoNinoAsync(pacienteId, mes, año);
-                return Ok(reporte);
-            }
-            catch (NotFoundException ex)
-            {
-                return NotFound(new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-        }
-
-        /// <summary>
-        /// 5. Obtiene citas próximas a confirmar en un rango de fechas
+        /// 2. Obtiene citas próximas a confirmar en un rango de fechas
         /// </summary>
         [HttpGet("citas-proximas")]
         public async Task<ActionResult<CitasProximasDto>> GetCitasProximas(
@@ -163,7 +90,7 @@ namespace CentroTerapia.API.Controllers
         }
 
         /// <summary>
-        /// 5b. Exporta citas próximas a PDF
+        /// 3. Exporta citas próximas a PDF
         /// </summary>
         [HttpGet("citas-proximas/export-pdf")]
         public async Task<IActionResult> ExportCitasProximasPdf(
