@@ -115,5 +115,62 @@ namespace CentroTerapia.API.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+        /// <summary>
+        /// 4. Historial de citas (pasadas) con filtros
+        /// </summary>
+        [HttpGet("historial-citas")]
+        public async Task<ActionResult<HistorialCitasDto>> GetHistorialCitas(
+            [FromQuery] DateTime fechaDesde,
+            [FromQuery] DateTime fechaHasta,
+            [FromQuery] int? especialidadId = null,
+            [FromQuery] int? terapeutaId = null,
+            [FromQuery] int? tipoSesionId = null,
+            [FromQuery] string? estado = null,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 50)
+        {
+            try
+            {
+                var reporte = await _reporteService.GetHistorialCitasAsync(fechaDesde, fechaHasta, especialidadId, terapeutaId, tipoSesionId, estado, page, pageSize);
+                return Ok(reporte);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// 5. Exporta historial de citas a PDF
+        /// </summary>
+        [HttpGet("historial-citas/export-pdf")]
+        public async Task<IActionResult> ExportHistorialCitasPdf(
+            [FromQuery] DateTime fechaDesde,
+            [FromQuery] DateTime fechaHasta,
+            [FromQuery] int? especialidadId = null,
+            [FromQuery] int? terapeutaId = null,
+            [FromQuery] int? tipoSesionId = null,
+            [FromQuery] string? estado = null)
+        {
+            try
+            {
+                var pdf = await _reporteService.ExportHistorialCitasAsync(fechaDesde, fechaHasta, especialidadId, terapeutaId, tipoSesionId, estado);
+                var fileName = $"HistorialCitas_{DateTime.Now:yyyyMMddHHmmss}.pdf";
+                return File(pdf, "application/pdf", fileName);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 }

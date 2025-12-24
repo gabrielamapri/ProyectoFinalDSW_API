@@ -13,5 +13,24 @@ namespace CentroTerapia.Application.Interfaces
         // 2. Citas Próximas a Confirmar
         Task<CitasProximasDto> GetCitasProximasAsync(DateTime fechaDesde, DateTime fechaHasta, int? especialidadId = null, int? terapeutaId = null, int? tipoSesionId = null);
         Task<byte[]> ExportCitasProximasAsync(DateTime fechaDesde, DateTime fechaHasta, int? especialidadId = null, int? terapeutaId = null, int? tipoSesionId = null);
+
+        // 3. Historial de Citas (pasado)
+        Task<HistorialCitasDto> GetHistorialCitasAsync(
+            DateTime fechaDesde,
+            DateTime fechaHasta,
+            int? especialidadId = null,
+            int? terapeutaId = null,
+            int? tipoSesionId = null,
+            string? estado = null,
+            int page = 1,
+            int pageSize = 50);
+
+        Task<byte[]> ExportHistorialCitasAsync(
+            DateTime fechaDesde,
+            DateTime fechaHasta,
+            int? especialidadId = null,
+            int? terapeutaId = null,
+            int? tipoSesionId = null,
+            string? estado = null);
     }
 }

@@ -206,6 +206,201 @@ namespace CentroTerapia.Application.Services
             }
         }
 
+        // 3. HISTORIAL DE CITAS (solo pasado)
+        public async Task<HistorialCitasDto> GetHistorialCitasAsync(
+            DateTime fechaDesde,
+            DateTime fechaHasta,
+            int? especialidadId = null,
+            int? terapeutaId = null,
+            int? tipoSesionId = null,
+            string? estado = null,
+            int page = 1,
+            int pageSize = 50)
+        {
+            try
+            {
+                var ayer = DateTime.Today.AddDays(-1);
+                if (fechaHasta.Date > ayer)
+                    throw new ArgumentException("La fecha hasta debe ser como máximo el día anterior a hoy");
+
+                if (fechaDesde.Date > fechaHasta.Date)
+                    throw new ArgumentException("La fecha desde no puede ser posterior a la fecha hasta");
+
+                if ((fechaHasta.Date - fechaDesde.Date).Days > 365)
+                    throw new ArgumentException("El rango de fechas no puede superar 1 año");
+
+                var todasLasCitas = await _citaService.GetAllAsync();
+                var citas = todasLasCitas
+                    .Where(c => c.Fecha.Date >= fechaDesde.Date && c.Fecha.Date <= fechaHasta.Date)
+                    .ToList();
+
+                if (especialidadId.HasValue)
+                    citas = citas.Where(c => c.EspecialidadId == especialidadId.Value).ToList();
+
+                if (terapeutaId.HasValue)
+                    citas = citas.Where(c => c.TerapeutaId == terapeutaId.Value).ToList();
+
+                if (tipoSesionId.HasValue)
+                    citas = citas.Where(c => c.TipoSesionId == tipoSesionId.Value).ToList();
+
+                if (!string.IsNullOrWhiteSpace(estado))
+                    citas = citas.Where(c => string.Equals(c.Estado, estado, StringComparison.OrdinalIgnoreCase)).ToList();
+
+                var citasOrdenadas = citas.OrderBy(c => c.Fecha).ToList();
+                var total = citasOrdenadas.Count;
+                var pageSafe = Math.Max(page, 1);
+                var sizeSafe = Math.Max(pageSize, 1);
+                var citasPaginadas = citasOrdenadas.Skip((pageSafe - 1) * sizeSafe).Take(sizeSafe).ToList();
+
+                var detalles = citasPaginadas.Select(c => new CitaDetalleDto
+                {
+                    CitaId = c.Id,
+                    Fecha = c.Fecha,
+                    HoraInicio = c.Fecha.Hour,
+                    MinutoInicio = c.Fecha.Minute,
+                    PacienteNombre = c.PacienteNombre ?? "N/A",
+                    Especialidad = c.EspecialidadNombre ?? "N/A",
+                    TipoSesion = c.TipoSesionNombre ?? "N/A",
+                    TerapeutaNombre = c.TerapeutaNombre ?? "N/A",
+                    Estado = c.Estado ?? "",
+                    Motivo = c.Motivo ?? ""
+                }).ToList();
+
+                return new HistorialCitasDto
+                {
+                    FechaDesde = fechaDesde,
+                    FechaHasta = fechaHasta,
+                    EspecialidadId = especialidadId,
+                    TerapeutaId = terapeutaId,
+                    TipoSesionId = tipoSesionId,
+                    EstadoFiltro = estado,
+                    TotalCitas = total,
+                    Completadas = citasOrdenadas.Count(c => c.Estado == "Completed"),
+                    Canceladas = citasOrdenadas.Count(c => c.Estado == "Cancelled"),
+                    Programadas = citasOrdenadas.Count(c => c.Estado == "Scheduled"),
+                    Citas = detalles,
+                    Pagination = new PaginationDto
+                    {
+                        Page = pageSafe,
+                        PageSize = sizeSafe,
+                        Total = total
+                    }
+                };
+            }
+            catch (ArgumentException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error al obtener historial de citas: {ex.Message}");
+            }
+        }
+
+        public async Task<byte[]> ExportHistorialCitasAsync(
+            DateTime fechaDesde,
+            DateTime fechaHasta,
+            int? especialidadId = null,
+            int? terapeutaId = null,
+            int? tipoSesionId = null,
+            string? estado = null)
+        {
+            try
+            {
+                QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
+
+                var reporte = await GetHistorialCitasAsync(fechaDesde, fechaHasta, especialidadId, terapeutaId, tipoSesionId, estado, 1, 1000);
+
+                var document = Document.Create(container =>
+                {
+                    container.Page(page =>
+                    {
+                        page.Size(PageSizes.A4);
+                        page.Margin(20);
+
+                        page.Header().Element(header =>
+                        {
+                            header.Column(col =>
+                            {
+                                col.Item().Text("CENTRO DE TERAPIAS INFANTILES").FontSize(18).Bold().AlignCenter();
+                                col.Item().Text("Historial de Citas").FontSize(14).Bold().AlignCenter();
+                                col.Item().Text($"Generado: {DateTime.Now:dd/MM/yyyy HH:mm}").FontSize(9).AlignCenter();
+                                col.Item().PaddingVertical(8);
+                            });
+                        });
+
+                        page.Content().Element(content =>
+                        {
+                            content.Column(col =>
+                            {
+                                col.Item().Text($"Rango: {reporte.FechaDesde:dd/MM/yyyy} - {reporte.FechaHasta:dd/MM/yyyy}").FontSize(11).Bold();
+                                col.Item().Text($"Filtros → Especialidad: {(reporte.EspecialidadId?.ToString() ?? "Todas")}, Terapeuta: {(reporte.TerapeutaId?.ToString() ?? "Todos")}, Tipo Sesión: {(reporte.TipoSesionId?.ToString() ?? "Todas")}, Estado: {(string.IsNullOrWhiteSpace(reporte.EstadoFiltro) ? "Todos" : reporte.EstadoFiltro)}").FontSize(9);
+                                col.Item().Text($"Total: {reporte.TotalCitas} | Completadas: {reporte.Completadas} | Programadas: {reporte.Programadas} | Canceladas: {reporte.Canceladas}").FontSize(9);
+                                col.Item().PaddingBottom(8);
+
+                                col.Item().Table(t =>
+                                {
+                                    t.ColumnsDefinition(columns =>
+                                    {
+                                        columns.RelativeColumn(1.1f);   // Fecha
+                                        columns.RelativeColumn(0.9f);   // Hora
+                                        columns.RelativeColumn(2.0f);   // Paciente
+                                        columns.RelativeColumn(1.6f);   // Especialidad
+                                        columns.RelativeColumn(1.6f);   // Tipo Sesión
+                                        columns.RelativeColumn(1.8f);   // Terapeuta
+                                        columns.RelativeColumn(1.2f);   // Estado
+                                        columns.RelativeColumn(2.0f);   // Motivo
+                                    });
+
+                                    t.Header(header =>
+                                    {
+                                        header.Cell().Background("#E8E8E8").Padding(5).Text("Fecha").FontSize(9).Bold();
+                                        header.Cell().Background("#E8E8E8").Padding(5).Text("Hora").FontSize(9).Bold();
+                                        header.Cell().Background("#E8E8E8").Padding(5).Text("Paciente").FontSize(9).Bold();
+                                        header.Cell().Background("#E8E8E8").Padding(5).Text("Especialidad").FontSize(9).Bold();
+                                        header.Cell().Background("#E8E8E8").Padding(5).Text("Tipo Sesión").FontSize(9).Bold();
+                                        header.Cell().Background("#E8E8E8").Padding(5).Text("Terapeuta").FontSize(9).Bold();
+                                        header.Cell().Background("#E8E8E8").Padding(5).Text("Estado").FontSize(9).Bold();
+                                        header.Cell().Background("#E8E8E8").Padding(5).Text("Motivo").FontSize(9).Bold();
+                                    });
+
+                                    foreach (var c in reporte.Citas)
+                                    {
+                                        var fechaStr = c.Fecha != DateTime.MinValue ? c.Fecha.ToString("dd/MM/yyyy") : "—";
+                                        var horaStr = $"{c.HoraInicio:00}:{c.MinutoInicio:00}";
+
+                                        t.Cell().Padding(3).Text(fechaStr).FontSize(8);
+                                        t.Cell().Padding(3).Text(horaStr).FontSize(8);
+                                        t.Cell().Padding(3).Text(string.IsNullOrWhiteSpace(c.PacienteNombre) ? "N/A" : c.PacienteNombre).FontSize(8);
+                                        t.Cell().Padding(3).Text(string.IsNullOrWhiteSpace(c.Especialidad) ? "N/A" : c.Especialidad).FontSize(8);
+                                        t.Cell().Padding(3).Text(string.IsNullOrWhiteSpace(c.TipoSesion) ? "N/A" : c.TipoSesion).FontSize(8);
+                                        t.Cell().Padding(3).Text(string.IsNullOrWhiteSpace(c.TerapeutaNombre) ? "N/A" : c.TerapeutaNombre).FontSize(8);
+                                        t.Cell().Padding(3).Text(string.IsNullOrWhiteSpace(c.Estado) ? "N/A" : c.Estado).FontSize(8);
+                                        t.Cell().Padding(3).Text(string.IsNullOrWhiteSpace(c.Motivo) ? "" : c.Motivo).FontSize(8);
+                                    }
+                                });
+                            });
+                        });
+
+                        page.Footer().AlignCenter().Text(txt =>
+                        {
+                            txt.Span($"Generado el: {DateTime.Now:dd/MM/yyyy HH:mm}").FontSize(8);
+                        });
+                    });
+                });
+
+                return document.GeneratePdf();
+            }
+            catch (ArgumentException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error al exportar historial de citas: {ex.Message}");
+            }
+        }
+
         public async Task<byte[]> ExportCitasProximasAsync(DateTime fechaDesde, DateTime fechaHasta, int? especialidadId = null, int? terapeutaId = null, int? tipoSesionId = null)
         {
             try
