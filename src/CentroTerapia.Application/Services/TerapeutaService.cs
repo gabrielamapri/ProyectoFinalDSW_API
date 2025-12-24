@@ -34,6 +34,14 @@ namespace CentroTerapia.Application.Services
         {
             var exists = await _unitOfWork.Terapeutas.ExistsAsync(id);
             if (!exists) throw new NotFoundException("Terapeuta", id);
+            // Bloquear eliminación si existen citas asociadas (historial)
+            var hasCitas = await _unitOfWork.Citas.AnyByTerapeutaIdAsync(id);
+            if (hasCitas)
+            {
+                throw new BusinessRuleException(
+                    "TerapeutaTieneHistorial",
+                    "No se puede eliminar. Tiene historial asociado.");
+            }
             var result = await _unitOfWork.Terapeutas.DeleteAsync(id);
             await _unitOfWork.SaveChangesAsync();
             return result;

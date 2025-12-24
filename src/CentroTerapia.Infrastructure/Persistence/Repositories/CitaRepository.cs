@@ -70,6 +70,11 @@ namespace CentroTerapia.Infrastructure.Persistence.Repositories
                 .OrderByDescending(a => a.Fecha)
                 .ToListAsync();
         }
+
+        public async Task<bool> AnyByTerapeutaIdAsync(int terapeutaId)
+        {
+            return await _dbSet.AnyAsync(a => a.TerapeutaId == terapeutaId);
+        }
     }
 }
 

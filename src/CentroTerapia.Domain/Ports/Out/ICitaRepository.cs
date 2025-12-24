@@ -11,6 +11,8 @@ namespace CentroTerapia.Domain.Ports.Out
         Task<Cita?> GetWithPacienteAndFamiliaAsync(int id);
         // Returns all citas including related Paciente, Familia, TipoSesion and Terapeuta
         Task<IEnumerable<Cita>> GetAllWithRelationsAsync();
+        // Efficient existence check for citas asociadas a un terapeuta
+        Task<bool> AnyByTerapeutaIdAsync(int terapeutaId);
     }
 }
 
