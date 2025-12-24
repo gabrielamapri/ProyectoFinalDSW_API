@@ -20,7 +20,10 @@ namespace CentroTerapia.Infrastructure.Persistence.Repositories
 
         public async Task<(IEnumerable<Familia> Items, int Total)> GetPagedAsync(int page, int pageSize, string? search)
         {
-            var query = _dbSet.AsQueryable();
+            // Incluir pacientes para que el DTO de familia tenga los dependientes en el listado
+            var query = _dbSet
+                .Include(f => f.Pacientes)
+                .AsQueryable();
             if (!string.IsNullOrWhiteSpace(search))
             {
                 var s = search.Trim().ToLower();
