@@ -7,6 +7,9 @@ namespace CentroTerapia.Application.Interfaces
         // 1. Historial Clínico del Paciente
         Task<HistorialPacienteDto> GetHistorialPacienteAsync(int pacienteId, int page = 1, int pageSize = 10);
 
+        // 1b. Exportar Historial a PDF
+        Task<byte[]> ExportHistorialPacienteAsync(int pacienteId);
+
         // 2. Control de Asistencia
         Task<ControlAsistenciaDto> GetControlAsistenciaAsync(DateTime fechaInicio, DateTime fechaFin);
 

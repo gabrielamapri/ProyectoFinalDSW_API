@@ -1,6 +1,8 @@
 using CentroTerapia.Application.DTOs.Reportes;
 using CentroTerapia.Application.Interfaces;
 using CentroTerapia.Domain.Exceptions;
+using QuestPDF.Fluent;
+using QuestPDF.Helpers;
 
 namespace CentroTerapia.Application.Services
 {
@@ -50,13 +52,13 @@ namespace CentroTerapia.Application.Services
                     }
                 }
 
-                var citas = await _citaService.GetByPacienteIdAsync(pacienteId);
+                var citas = (await _citaService.GetByPacienteIdAsync(pacienteId) ?? Enumerable.Empty<DTOs.Cita.CitaDto>()).ToList();
                 var citasOrdenadas = citas.OrderByDescending(c => c.Fecha).ToList();
                 var totalCitas = citasOrdenadas.Count;
                 var citasPaginadas = citasOrdenadas.Skip((page - 1) * pageSize).Take(pageSize).ToList();
 
                 // Obtener notas de sesión para las citas paginadas
-                var todasLasNotas = await _notaSesionService.GetAllAsync();
+                var todasLasNotas = (await _notaSesionService.GetAllAsync() ?? Enumerable.Empty<DTOs.NotaSesion.NotaSesionDto>()).ToList();
                 var citasConNotas = citasPaginadas.Select(c =>
                 {
                     var nota = todasLasNotas.FirstOrDefault(n => n.CitaId == c.Id);
@@ -337,6 +339,144 @@ namespace CentroTerapia.Application.Services
             {
                 throw new Exception($"Error al obtener citas próximas: {ex.Message}");
             }
+        }
+
+        // 5. EXPORTAR HISTORIAL A PDF
+        public async Task<byte[]> ExportHistorialPacienteAsync(int pacienteId)
+        {
+            try
+            {
+                if (pacienteId <= 0)
+                    throw new ArgumentException("El ID del paciente debe ser mayor a 0");
+
+                QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
+
+                var historial = await GetHistorialPacienteAsync(pacienteId, 1, 1000); // Cargar todas sin paginar para PDF
+
+                if (historial == null)
+                    throw new NotFoundException($"No se pudo generar el historial para el paciente {pacienteId}", pacienteId);
+
+                var document = Document.Create(container =>
+                {
+                    container.Page(page =>
+                    {
+                        page.Size(PageSizes.A4);
+                        page.Margin(20);
+
+                        page.Header().Element(header =>
+                        {
+                            header.Column(col =>
+                            {
+                                col.Item().Text("CENTRO DE TERAPIAS INFANTILES").FontSize(18).Bold().AlignCenter();
+                                col.Item().Text("Historial Clínico del Paciente").FontSize(14).Bold().AlignCenter();
+                                col.Item().PaddingVertical(10);
+                            });
+                        });
+
+                        page.Content().Element(content =>
+                        {
+                            content.Column(col =>
+                            {
+                                // Datos del Paciente
+                                col.Item().Column(infoPaciente =>
+                                {
+                                    infoPaciente.Item().Text($"Paciente: {historial.PacienteNombre}").FontSize(11).Bold();
+                                    infoPaciente.Item().Text($"DNI: {historial.PacienteDNI}");
+                                    infoPaciente.Item().Text($"Edad: {historial.Edad} años");
+                                    infoPaciente.Item().PaddingBottom(5);
+                                });
+
+                                col.Item().Column(infoResponsable =>
+                                {
+                                    infoResponsable.Item().Text("Responsable:").FontSize(11).Bold();
+                                    infoResponsable.Item().Text($"Nombre: {historial.ResponsableNombre}");
+                                    infoResponsable.Item().Text($"DNI: {historial.ResponsableDNI}");
+                                    infoResponsable.Item().Text($"Teléfono: {historial.ResponsableTelefono}");
+                                    infoResponsable.Item().Text($"Email: {historial.ResponsableEmail}");
+                                    infoResponsable.Item().PaddingBottom(10);
+                                });
+
+                                // Estadísticas
+                                col.Item().Column(stats =>
+                                {
+                                    stats.Item().Text("Estadísticas de Citas").FontSize(11).Bold();
+                                    stats.Item().Row(row =>
+                                    {
+                                        row.RelativeItem().Element(cell => cell.Border(1).Padding(5).Text($"Total: {historial.TotalCitas}").AlignCenter());
+                                        row.RelativeItem().Element(cell => cell.Border(1).Padding(5).Text($"Completadas: {historial.CitasCompletadas}").AlignCenter());
+                                        row.RelativeItem().Element(cell => cell.Border(1).Padding(5).Text($"Programadas: {historial.CitasProgramadas}").AlignCenter());
+                                        row.RelativeItem().Element(cell => cell.Border(1).Padding(5).Text($"Canceladas: {historial.CitasCanceladas}").AlignCenter());
+                                    });
+                                    stats.Item().PaddingBottom(10);
+                                });
+
+                                // Tabla de Citas
+                                col.Item().Column(tabla =>
+                                {
+                                    tabla.Item().Text("Historial de Citas").FontSize(11).Bold();
+                                    tabla.Item().Table(t =>
+                                    {
+                                        t.ColumnsDefinition(columns =>
+                                        {
+                                            columns.RelativeColumn();
+                                            columns.RelativeColumn();
+                                            columns.RelativeColumn();
+                                            columns.RelativeColumn();
+                                            columns.RelativeColumn();
+                                            columns.RelativeColumn(2);
+                                        });
+
+                                        // Encabezados
+                                        t.Header(header =>
+                                        {
+                                            header.Cell().Background("#E8E8E8").Padding(5).Text("Fecha").FontSize(9).Bold();
+                                            header.Cell().Background("#E8E8E8").Padding(5).Text("Estado").FontSize(9).Bold();
+                                            header.Cell().Background("#E8E8E8").Padding(5).Text("Terapeuta").FontSize(9).Bold();
+                                            header.Cell().Background("#E8E8E8").Padding(5).Text("Especialidad").FontSize(9).Bold();
+                                            header.Cell().Background("#E8E8E8").Padding(5).Text("Tipo Sesión").FontSize(9).Bold();
+                                            header.Cell().Background("#E8E8E8").Padding(5).Text("Notas").FontSize(9).Bold();
+                                        });
+
+                                        // Filas de citas
+                                        foreach (var cita in historial.Citas ?? new List<CitaHistorialDto>())
+                                        {
+                                            var fechaFormato = cita.Fecha != DateTime.MinValue ? cita.Fecha.ToString("dd/MM/yyyy") : "—";
+                                            t.Cell().Padding(3).Text(fechaFormato).FontSize(8);
+                                            t.Cell().Padding(3).Text(TraducirEstado(cita.Estado ?? "")).FontSize(8);
+                                            t.Cell().Padding(3).Text(cita.TerapeutaNombre ?? "—").FontSize(8);
+                                            t.Cell().Padding(3).Text(cita.Especialidad ?? "—").FontSize(8);
+                                            t.Cell().Padding(3).Text(cita.TipoSesion ?? "—").FontSize(8);
+                                            t.Cell().Padding(3).Text(cita.Notas ?? "").FontSize(8);
+                                        }
+                                    });
+                                });
+                            });
+                        });
+
+                        page.Footer().AlignCenter().Text(txt =>
+                        {
+                            txt.Span($"Generado el: {DateTime.Now:dd/MM/yyyy HH:mm}").FontSize(8);
+                        });
+                    });
+                });
+
+                return document.GeneratePdf();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error al exportar historial a PDF: {ex.Message}");
+            }
+        }
+
+        private string TraducirEstado(string estado)
+        {
+            return estado switch
+            {
+                "Scheduled" => "Programado",
+                "Completed" => "Completado",
+                "Cancelled" => "Cancelado",
+                _ => estado
+            };
         }
     }
 }

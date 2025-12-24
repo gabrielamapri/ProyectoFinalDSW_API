@@ -43,6 +43,27 @@ namespace CentroTerapia.API.Controllers
         }
 
         /// <summary>
+        /// Exporta el historial del paciente a PDF
+        /// </summary>
+        [HttpGet("historial-paciente/{pacienteId}/export-pdf")]
+        public async Task<IActionResult> ExportHistorialPacientePdf(int pacienteId)
+        {
+            try
+            {
+                var pdfBytes = await _reporteService.ExportHistorialPacienteAsync(pacienteId);
+                return File(pdfBytes, "application/pdf", $"Historial_Paciente_{pacienteId}_{DateTime.Now:yyyyMMdd_HHmmss}.pdf");
+            }
+            catch (NotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        /// <summary>
         /// 2. Obtiene control de asistencia en un rango de fechas
         /// </summary>
         [HttpGet("control-asistencia")]
