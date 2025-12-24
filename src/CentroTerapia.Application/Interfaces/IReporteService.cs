@@ -20,6 +20,7 @@ namespace CentroTerapia.Application.Interfaces
         Task<ReporteProgresoNinoDto> GetReporteProgresoNinoAsync(int pacienteId, int mes, int año);
 
         // 5. Citas Próximas a Confirmar
-        Task<CitasProximasDto> GetCitasProximasAsync(int diasAnticipacion = 7);
+        Task<CitasProximasDto> GetCitasProximasAsync(DateTime fechaDesde, DateTime fechaHasta, int? especialidadId = null, int? terapeutaId = null, int? tipoSesionId = null);
+        Task<byte[]> ExportCitasProximasAsync(DateTime fechaDesde, DateTime fechaHasta, int? especialidadId = null, int? terapeutaId = null, int? tipoSesionId = null);
     }
 }

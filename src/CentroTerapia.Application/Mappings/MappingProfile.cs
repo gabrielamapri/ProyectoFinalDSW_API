@@ -51,6 +51,7 @@ namespace CentroTerapia.Application.Mappings
                 .ForMember(dest => dest.PuedeSerCancelada, opt => opt.MapFrom(src => src.CanBeCancelada()))
                 .ForMember(dest => dest.TipoSesionId, opt => opt.MapFrom(src => src.TipoSesionId))
                 .ForMember(dest => dest.TipoSesionNombre, opt => opt.MapFrom(src => src.TipoSesion != null ? src.TipoSesion.Nombre : string.Empty))
+                .ForMember(dest => dest.EspecialidadId, opt => opt.MapFrom(src => src.TipoSesion != null ? (int?)src.TipoSesion.EspecialidadId : null))
                 .ForMember(dest => dest.EspecialidadNombre, opt => opt.MapFrom(src => src.TipoSesion != null && src.TipoSesion.Especialidad != null ? src.TipoSesion.Especialidad.Nombre : string.Empty))
                 .ForMember(dest => dest.TerapeutaId, opt => opt.MapFrom(src => src.TerapeutaId))
                 .ForMember(dest => dest.TerapeutaNombre, opt => opt.MapFrom(src => src.Terapeuta != null ? (src.Terapeuta.Nombres + " " + src.Terapeuta.Apellidos) : string.Empty))

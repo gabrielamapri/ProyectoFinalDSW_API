@@ -296,48 +296,198 @@ namespace CentroTerapia.Application.Services
         }
 
         // 5. CITAS PRÓXIMAS
-        public async Task<CitasProximasDto> GetCitasProximasAsync(int diasAnticipacion = 7)
+        public async Task<CitasProximasDto> GetCitasProximasAsync(DateTime fechaDesde, DateTime fechaHasta, int? especialidadId = null, int? terapeutaId = null, int? tipoSesionId = null)
         {
             try
             {
-                var ahora = DateTime.Now;
-                var fechaLimite = ahora.AddDays(diasAnticipacion);
+                // Validaciones
+                if (fechaDesde.Date < DateTime.Today)
+                    throw new ArgumentException("La fecha desde no puede ser anterior a hoy");
+
+                if (fechaHasta.Date < fechaDesde.Date)
+                    throw new ArgumentException("La fecha hasta no puede ser anterior a la fecha desde");
+
+                if ((fechaHasta.Date - fechaDesde.Date).Days > 365)
+                    throw new ArgumentException("El rango de fechas no puede superar 1 año");
 
                 var todasLasCitas = await _citaService.GetAllAsync();
                 var citas = todasLasCitas
-                    .Where(c => c.Fecha >= ahora &&
-                               c.Fecha <= fechaLimite &&
+                    .Where(c => c.Fecha.Date >= fechaDesde.Date &&
+                               c.Fecha.Date <= fechaHasta.Date &&
                                c.Estado == "Scheduled")
-                    .OrderBy(c => c.Fecha)
                     .ToList();
 
-                var citasDto = citas.Select(c => new CitaProximaDetalleDto
+                if (especialidadId.HasValue)
                 {
-                    CitaId = c.Id,
-                    Fecha = c.Fecha,
-                    HoraInicio = c.Fecha.Hour,
-                    MinutoInicio = c.Fecha.Minute,
-                    PacienteNombre = c.PacienteNombre,
-                    PacienteEdad = 0, // Simplificado
-                    Especialidad = c.EspecialidadNombre,
-                    TerapeutaNombre = c.TerapeutaNombre,
-                    ResponsableNombre = "N/A", // Simplificado
-                    ResponsableTelefono = "N/A",
-                    ResponsableEmail = "N/A",
-                    Estado = c.Estado,
-                    Confirmada = false
-                }).ToList();
+                    citas = citas.Where(c => c.EspecialidadId == especialidadId.Value).ToList();
+                }
+
+                // Aplicar filtros opcionales (solo terapeuta y tipo sesión tienen IDs en CitaDto)
+                if (terapeutaId.HasValue)
+                {
+                    citas = citas.Where(c => c.TerapeutaId == terapeutaId.Value).ToList();
+                }
+
+                if (tipoSesionId.HasValue)
+                {
+                    citas = citas.Where(c => c.TipoSesionId == tipoSesionId.Value).ToList();
+                }
+
+                citas = citas.OrderBy(c => c.Fecha).ToList();
+
+                // Construir DTOs con datos completos
+                var citasDto = new List<CitaProximaDetalleDto>();
+
+                foreach (var cita in citas)
+                {
+                    // Obtener datos del paciente y familia
+                    var paciente = await _pacienteService.GetByIdAsync(cita.PacienteId);
+                    
+                    string responsableNombre = "N/A";
+                    string responsableTelefono = "N/A";
+
+                    if (paciente != null && paciente.FamiliaId.HasValue)
+                    {
+                        var familia = await _familiaService.GetByIdAsync(paciente.FamiliaId.Value);
+                        if (familia != null)
+                        {
+                            responsableNombre = $"{familia.ResponsablePrincipalNombre ?? ""} {familia.ResponsablePrincipalApellido ?? ""}".Trim();
+                            if (string.IsNullOrWhiteSpace(responsableNombre))
+                                responsableNombre = "N/A";
+                            
+                            responsableTelefono = familia.ResponsablePrincipalTelefono ?? familia.TelefonoContacto ?? "N/A";
+                        }
+                    }
+
+                    citasDto.Add(new CitaProximaDetalleDto
+                    {
+                        CitaId = cita.Id,
+                        Fecha = cita.Fecha,
+                        HoraInicio = cita.Fecha.Hour,
+                        MinutoInicio = cita.Fecha.Minute,
+                        PacienteNombre = cita.PacienteNombre ?? "N/A",
+                        Especialidad = cita.EspecialidadNombre ?? "N/A",
+                        TipoSesion = cita.TipoSesionNombre ?? "N/A",
+                        TerapeutaNombre = cita.TerapeutaNombre ?? "N/A",
+                        ResponsableNombre = responsableNombre,
+                        ResponsableTelefono = responsableTelefono
+                    });
+                }
 
                 return new CitasProximasDto
                 {
-                    FechaConsulta = ahora,
-                    DiasDesdHoy = diasAnticipacion,
+                    FechaConsulta = DateTime.Now,
+                    FechaDesde = fechaDesde,
+                    FechaHasta = fechaHasta,
+                    TotalCitas = citasDto.Count,
                     Citas = citasDto
                 };
+            }
+            catch (ArgumentException)
+            {
+                throw;
             }
             catch (Exception ex)
             {
                 throw new Exception($"Error al obtener citas próximas: {ex.Message}");
+            }
+        }
+
+        public async Task<byte[]> ExportCitasProximasAsync(DateTime fechaDesde, DateTime fechaHasta, int? especialidadId = null, int? terapeutaId = null, int? tipoSesionId = null)
+        {
+            try
+            {
+                QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
+
+                var reporte = await GetCitasProximasAsync(fechaDesde, fechaHasta, especialidadId, terapeutaId, tipoSesionId);
+
+                var document = Document.Create(container =>
+                {
+                    container.Page(page =>
+                    {
+                        page.Size(PageSizes.A4);
+                        page.Margin(20);
+
+                        page.Header().Element(header =>
+                        {
+                            header.Column(col =>
+                            {
+                                col.Item().Text("CENTRO DE TERAPIAS INFANTILES").FontSize(18).Bold().AlignCenter();
+                                col.Item().Text("Reporte de Citas Próximas").FontSize(14).Bold().AlignCenter();
+                                col.Item().Text($"Generado: {DateTime.Now:dd/MM/yyyy HH:mm}").FontSize(9).AlignCenter();
+                                col.Item().PaddingVertical(8);
+                            });
+                        });
+
+                        page.Content().Element(content =>
+                        {
+                            content.Column(col =>
+                            {
+                                col.Item().Text($"Rango: {reporte.FechaDesde:dd/MM/yyyy} - {reporte.FechaHasta:dd/MM/yyyy}").FontSize(11).Bold();
+                                col.Item().Text($"Total de citas: {reporte.TotalCitas}").FontSize(10);
+                                col.Item().Text($"Filtros → Especialidad: {(especialidadId.HasValue ? especialidadId.Value.ToString() : "Todas")}, Terapeuta: {(terapeutaId.HasValue ? terapeutaId.Value.ToString() : "Todos")}, Tipo Sesión: {(tipoSesionId.HasValue ? tipoSesionId.Value.ToString() : "Todas")}").FontSize(9);
+                                col.Item().PaddingBottom(8);
+
+                                col.Item().Table(t =>
+                                {
+                                    t.ColumnsDefinition(columns =>
+                                    {
+                                        columns.RelativeColumn(1.1f);   // Fecha
+                                        columns.RelativeColumn(0.9f);   // Hora
+                                        columns.RelativeColumn(2.0f);   // Paciente
+                                        columns.RelativeColumn(1.6f);   // Especialidad
+                                        columns.RelativeColumn(1.6f);   // Tipo Sesión
+                                        columns.RelativeColumn(1.8f);   // Terapeuta
+                                        columns.RelativeColumn(2.0f);   // Responsable
+                                        columns.RelativeColumn(1.5f);   // Teléfono
+                                    });
+
+                                    t.Header(header =>
+                                    {
+                                        header.Cell().Background("#E8E8E8").Padding(5).Text("Fecha").FontSize(9).Bold();
+                                        header.Cell().Background("#E8E8E8").Padding(5).Text("Hora").FontSize(9).Bold();
+                                        header.Cell().Background("#E8E8E8").Padding(5).Text("Paciente").FontSize(9).Bold();
+                                        header.Cell().Background("#E8E8E8").Padding(5).Text("Especialidad").FontSize(9).Bold();
+                                        header.Cell().Background("#E8E8E8").Padding(5).Text("Tipo Sesión").FontSize(9).Bold();
+                                        header.Cell().Background("#E8E8E8").Padding(5).Text("Terapeuta").FontSize(9).Bold();
+                                        header.Cell().Background("#E8E8E8").Padding(5).Text("Responsable").FontSize(9).Bold();
+                                        header.Cell().Background("#E8E8E8").Padding(5).Text("Teléfono").FontSize(9).Bold();
+                                    });
+
+                                    foreach (var cita in reporte.Citas)
+                                    {
+                                        var fechaStr = cita.Fecha != DateTime.MinValue ? cita.Fecha.ToString("dd/MM/yyyy") : "—";
+                                        var horaStr = $"{cita.HoraInicio:00}:{cita.MinutoInicio:00}";
+
+                                        t.Cell().Padding(3).Text(fechaStr).FontSize(8);
+                                        t.Cell().Padding(3).Text(horaStr).FontSize(8);
+                                        t.Cell().Padding(3).Text(string.IsNullOrWhiteSpace(cita.PacienteNombre) ? "N/A" : cita.PacienteNombre).FontSize(8);
+                                        t.Cell().Padding(3).Text(string.IsNullOrWhiteSpace(cita.Especialidad) ? "N/A" : cita.Especialidad).FontSize(8);
+                                        t.Cell().Padding(3).Text(string.IsNullOrWhiteSpace(cita.TipoSesion) ? "N/A" : cita.TipoSesion).FontSize(8);
+                                        t.Cell().Padding(3).Text(string.IsNullOrWhiteSpace(cita.TerapeutaNombre) ? "N/A" : cita.TerapeutaNombre).FontSize(8);
+                                        t.Cell().Padding(3).Text(string.IsNullOrWhiteSpace(cita.ResponsableNombre) ? "N/A" : cita.ResponsableNombre).FontSize(8);
+                                        t.Cell().Padding(3).Text(string.IsNullOrWhiteSpace(cita.ResponsableTelefono) ? "N/A" : cita.ResponsableTelefono).FontSize(8);
+                                    }
+                                });
+                            });
+                        });
+
+                        page.Footer().AlignCenter().Text(txt =>
+                        {
+                            txt.Span($"Generado el: {DateTime.Now:dd/MM/yyyy HH:mm}").FontSize(8);
+                        });
+                    });
+                });
+
+                return document.GeneratePdf();
+            }
+            catch (ArgumentException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error al exportar citas próximas: {ex.Message}");
             }
         }
 

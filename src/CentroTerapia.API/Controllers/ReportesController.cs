@@ -137,19 +137,51 @@ namespace CentroTerapia.API.Controllers
         }
 
         /// <summary>
-        /// 5. Obtiene citas próximas a confirmar
+        /// 5. Obtiene citas próximas a confirmar en un rango de fechas
         /// </summary>
         [HttpGet("citas-proximas")]
         public async Task<ActionResult<CitasProximasDto>> GetCitasProximas(
-            [FromQuery] int diasAnticipacion = 7)
+            [FromQuery] DateTime fechaDesde,
+            [FromQuery] DateTime fechaHasta,
+            [FromQuery] int? especialidadId = null,
+            [FromQuery] int? terapeutaId = null,
+            [FromQuery] int? tipoSesionId = null)
         {
             try
             {
-                if (diasAnticipacion < 1 || diasAnticipacion > 90)
-                    return BadRequest(new { message = "Los días de anticipación deben estar entre 1 y 90" });
-
-                var reporte = await _reporteService.GetCitasProximasAsync(diasAnticipacion);
+                var reporte = await _reporteService.GetCitasProximasAsync(fechaDesde, fechaHasta, especialidadId, terapeutaId, tipoSesionId);
                 return Ok(reporte);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// 5b. Exporta citas próximas a PDF
+        /// </summary>
+        [HttpGet("citas-proximas/export-pdf")]
+        public async Task<IActionResult> ExportCitasProximasPdf(
+            [FromQuery] DateTime fechaDesde,
+            [FromQuery] DateTime fechaHasta,
+            [FromQuery] int? especialidadId = null,
+            [FromQuery] int? terapeutaId = null,
+            [FromQuery] int? tipoSesionId = null)
+        {
+            try
+            {
+                var pdf = await _reporteService.ExportCitasProximasAsync(fechaDesde, fechaHasta, especialidadId, terapeutaId, tipoSesionId);
+                var fileName = $"CitasProximas_{DateTime.Now:yyyyMMddHHmmss}.pdf";
+                return File(pdf, "application/pdf", fileName);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
             }
             catch (Exception ex)
             {
