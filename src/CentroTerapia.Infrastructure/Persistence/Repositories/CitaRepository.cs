@@ -18,6 +18,9 @@ namespace CentroTerapia.Infrastructure.Persistence.Repositories
                 .Where(a => a.PacienteId == pacienteId)
                 .Include(a => a.Paciente)
                     .ThenInclude(p => p!.Familia)
+                .Include(a => a.TipoSesion)
+                    .ThenInclude(ts => ts!.Especialidad)
+                .Include(a => a.Terapeuta)
                 .OrderByDescending(a => a.Fecha)
                 .ToListAsync();
         }
@@ -28,6 +31,9 @@ namespace CentroTerapia.Infrastructure.Persistence.Repositories
                 .Where(a => a.Fecha >= startDate && a.Fecha <= endDate)
                 .Include(a => a.Paciente)
                     .ThenInclude(p => p!.Familia)
+                .Include(a => a.TipoSesion)
+                    .ThenInclude(ts => ts!.Especialidad)
+                .Include(a => a.Terapeuta)
                 .OrderBy(a => a.Fecha)
                 .ToListAsync();
         }
@@ -38,6 +44,9 @@ namespace CentroTerapia.Infrastructure.Persistence.Repositories
                 .Where(a => a.Estado == status)
                 .Include(a => a.Paciente)
                     .ThenInclude(p => p!.Familia)
+                .Include(a => a.TipoSesion)
+                    .ThenInclude(ts => ts!.Especialidad)
+                .Include(a => a.Terapeuta)
                 .OrderByDescending(a => a.Fecha)
                 .ToListAsync();
         }
