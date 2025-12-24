@@ -102,37 +102,5 @@ namespace CentroTerapia.API.Controllers
             }
         }
 
-        [HttpPost("{id}/excepciones")]
-        public async Task<ActionResult<IEnumerable<FranjaExcepcionDto>>> AddException(int id, [FromBody] AddFranjaExcepcionDto dto)
-        {
-            try
-            {
-                var res = await _service.AddExceptionAsync(id, dto);
-                return Ok(res);
-            }
-            catch (NotFoundException ex)
-            {
-                return NotFound(new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-        }
-
-        [HttpDelete("{id}/excepciones")]
-        public async Task<ActionResult> RemoveException(int id, [FromQuery] DateTime date)
-        {
-            try
-            {
-                var ok = await _service.RemoveExceptionAsync(id, date);
-                if (!ok) return NotFound();
-                return NoContent();
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-        }
     }
 }

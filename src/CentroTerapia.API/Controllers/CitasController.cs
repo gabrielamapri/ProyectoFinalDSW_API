@@ -87,6 +87,21 @@ namespace CentroTerapia.API.Controllers
         }
 
         [AllowAnonymous]
+        [HttpGet("terapeuta/{terapeutaId}/rango-fechas")]
+        public async Task<ActionResult<IEnumerable<CitaAlertaDto>>> GetByTerapeutaAndFechaRango(int terapeutaId, [FromQuery] DateTime inicio, [FromQuery] DateTime fin)
+        {
+            try
+            {
+                var citas = await _appointmentService.GetByTerapeutaAndDateRangeAsync(terapeutaId, inicio, fin);
+                return Ok(citas);
+            }
+            catch (BusinessRuleException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [AllowAnonymous]
         [HttpPost]
         public async Task<ActionResult<CitaDto>> Create([FromBody] CreateCitaDto dto)
         {

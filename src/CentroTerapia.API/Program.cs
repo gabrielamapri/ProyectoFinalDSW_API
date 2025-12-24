@@ -38,8 +38,13 @@ if (File.Exists(envPath))
 }
 
 var builder = WebApplication.CreateBuilder(args);
-// Force the app to listen on localhost:5192 unless overridden by environment
-builder.WebHost.UseUrls("http://localhost:5192");
+
+// Reduce EF Core logging to Warnings only to avoid excessive console output
+builder.Logging.AddFilter("Microsoft.EntityFrameworkCore", LogLevel.Warning);
+
+// Allow overriding the URL via ASPNETCORE_URLS; default to localhost:5192
+var urls = Environment.GetEnvironmentVariable("ASPNETCORE_URLS") ?? "http://localhost:5192";
+builder.WebHost.UseUrls(urls);
 
 // Configurar CORS
 
