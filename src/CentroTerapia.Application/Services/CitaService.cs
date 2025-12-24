@@ -7,19 +7,26 @@ using CentroTerapia.Domain.Exceptions;
 using CentroTerapia.Domain.Ports.Out;
 
 namespace CentroTerapia.Application.Services;
-
     public class CitaService : ICitaService
-{
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly IMapper _mapper;
-    private readonly ILogger<CitaService> _logger;
-
-    public CitaService(IUnitOfWork unitOfWork, IMapper mapper, ILogger<CitaService> logger)
     {
-        _unitOfWork = unitOfWork;
-        _mapper = mapper;
-        _logger = logger;
-    }
+
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly IMapper _mapper;
+        private readonly ILogger<CitaService> _logger;
+
+        public CitaService(IUnitOfWork unitOfWork, IMapper mapper, ILogger<CitaService> logger)
+        {
+            _unitOfWork = unitOfWork;
+            _mapper = mapper;
+            _logger = logger;
+        }
+
+        public async Task<IEnumerable<CitaDto>> GetByTerapeutaIdAsync(int terapeutaId)
+        {
+            var citas = await _unitOfWork.Citas.GetAllWithRelationsAsync();
+            var filtradas = citas.Where(c => c.TerapeutaId == terapeutaId).ToList();
+            return _mapper.Map<IEnumerable<CitaDto>>(filtradas);
+        }
 
     public async Task<CitaDto> GetByIdAsync(int id)
     {
@@ -75,12 +82,13 @@ namespace CentroTerapia.Application.Services;
             var dtoUtc = dto.Fecha.Kind == DateTimeKind.Utc ? dto.Fecha : dto.Fecha.ToUniversalTime();
             var dtoLocal = dtoUtc.ToLocalTime();
 
-            if (dtoLocal <= DateTime.Now)
+            // Permitir programar para hoy si la hora es futura
+            if (dtoLocal.Date < DateTime.Now.Date || (dtoLocal.Date == DateTime.Now.Date && dtoLocal.TimeOfDay <= DateTime.Now.TimeOfDay))
             {
                 _logger.LogWarning("Attempted to create Cita in the past for Paciente ID {PacienteID} on {Fecha}", dto.PacienteId, dto.Fecha);
                 throw new BusinessRuleException(
                     "PastAppointment",
-                    "Cannot schedule Citas in the past.");
+                    "No se puede programar citas en horas pasadas.");
             }
 
         // determine duration
@@ -292,19 +300,15 @@ namespace CentroTerapia.Application.Services;
             throw new NotFoundException("Cita", id);
         }
 
-        // If rescheduling (changing Fecha) enforce 12-hour restriction
-        if (dto.Fecha != Cita.Fecha)
-        {
+        // Solo validar fecha si se está reprogramando (no al cambiar estado)
+        if (dto.Fecha != default(DateTime) && dto.Fecha != Cita.Fecha) {
             var hoursUntil = (Cita.Fecha - DateTime.Now).TotalHours;
-            if (hoursUntil < 12)
-            {
+            if (hoursUntil < 12) {
                 throw new BusinessRuleException(
                     "RescheduleNotAllowed",
                     "No se puede anular o reprogramar citas con menos de 12 horas de anticipacion, Comunicarse via telefonica.");
             }
-
-            if (dto.Fecha <= DateTime.Now)
-            {
+            if (dto.Fecha <= DateTime.Now) {
                 throw new BusinessRuleException(
                     "PastAppointment",
                     "Cannot reschedule to a past date.");
@@ -312,58 +316,13 @@ namespace CentroTerapia.Application.Services;
         }
 
         // Determine new duration if provided
-        int duration = dto.DuracionMinutos ?? Cita.DuracionMinutos;
-        if (duration <= 0 && dto.TipoSesionId.HasValue)
-        {
-            var tipo = await _unitOfWork.TiposSesion.GetByIdAsync(dto.TipoSesionId.Value);
-            if (tipo != null) duration = tipo.DuracionMinutos;
-        }
-        if (duration <= 0) duration = Cita.DuracionMinutos > 0 ? Cita.DuracionMinutos : 45;
+        int duration = Cita.DuracionMinutos > 0 ? Cita.DuracionMinutos : 45;
 
         // If therapist changed or date changed, validate availability and overlaps
-        var newTerapeutaId = dto.TerapeutaId ?? Cita.TerapeutaId;
-        var newFecha = dto.Fecha;
-        // Normalize newFecha for comparisons: compute once so it's available later when persisting
-        var newUtc = newFecha.Kind == DateTimeKind.Utc ? newFecha : newFecha.ToUniversalTime();
-        var newLocal = newUtc.ToLocalTime();
-        if (newTerapeutaId.HasValue)
-        {
+        // Solo validar disponibilidad si se está cambiando terapeuta o fecha
+        // Si solo se cambia estado, no validar disponibilidad ni solapamiento
 
-            var franjas = await _unitOfWork.Franjas.GetByTerapeutaIdAsync(newTerapeutaId.Value);
-            var appointmentTime = newLocal.TimeOfDay;
-            var appointmentEndTime = appointmentTime.Add(TimeSpan.FromMinutes(duration));
-
-            var covers = franjas.Any(f =>
-                ((f.Recurrente && f.DiaSemana.HasValue && f.DiaSemana.Value == (int)newLocal.DayOfWeek) || (!f.Recurrente && f.Fecha.HasValue && f.Fecha.Value.Date == newLocal.Date))
-                && appointmentTime >= f.HoraInicio && appointmentEndTime <= f.HoraFin);
-
-            if (!covers)
-            {
-                throw new BusinessRuleException("NoAvailability", "No existe una franja disponible del terapeuta en la fecha/hora solicitada.");
-            }
-
-            // check overlaps excluding this appointment — use UTC windows for DB queries
-            var windowStart = newUtc.AddMinutes(-duration);
-            var windowEnd = newUtc.AddMinutes(duration);
-            var potential = await _unitOfWork.Citas.GetByDateRangeAsync(windowStart, windowEnd);
-            var overlaps = potential.Where(a => a.TerapeutaId == newTerapeutaId && a.Id != Cita.Id && a.Estado != "Cancelled")
-                .Any(a =>
-                {
-                    var existingStart = a.Fecha;
-                    var existingDuration = a.DuracionMinutos > 0 ? a.DuracionMinutos : duration;
-                    var existingEnd = existingStart.AddMinutes(existingDuration);
-                    var newStart = newUtc;
-                    var newEnd = newUtc.AddMinutes(duration);
-                    return existingStart < newEnd && existingEnd > newStart;
-                });
-
-            if (overlaps)
-            {
-                throw new BusinessRuleException("ConflictoHorario", "El terapeuta tiene otra cita en ese horario.");
-            }
-        }
-
-        var validStatuses = new[] { "Scheduled", "Completed", "Cancelled" };
+        var validStatuses = new[] { "Scheduled", "Completed", "Completada", "Cancelled", "NoAsistio" };
         if (!validStatuses.Contains(dto.Estado))
         {
             throw new BusinessRuleException(
@@ -371,11 +330,37 @@ namespace CentroTerapia.Application.Services;
                 $"Status must be one of: {string.Join(", ", validStatuses)}");
         }
 
-        _mapper.Map(dto, Cita);
-        // Store the wall-clock local time for the appointment (preserve selected hour).
-        // `newLocal` was computed earlier for availability checks; persist it as Unspecified.
-        Cita.Fecha = DateTime.SpecifyKind(newLocal, DateTimeKind.Unspecified);
-        Cita.DuracionMinutos = duration;
+        // Validar transición de estado
+        if (dto.Estado == "Completed" || dto.Estado == "Completada")
+        {
+            if (Cita.Estado != "Scheduled" && Cita.Estado != "Programada")
+                throw new BusinessRuleException("TransicionInvalida", "Solo se puede completar una cita programada.");
+            if (DateTime.Now < Cita.Fecha)
+                throw new BusinessRuleException("FechaInvalida", "No se puede completar una cita futura.");
+            // Guardar el estado en español si así lo envía el frontend
+            Cita.Estado = dto.Estado == "Completada" ? "Completada" : "Completed";
+            if (!string.IsNullOrWhiteSpace(dto.Notas))
+                Cita.Notas = dto.Notas;
+        }
+        else if (dto.Estado == "NoAsistio")
+        {
+            if (Cita.Estado != "Scheduled" && Cita.Estado != "Programada")
+                throw new BusinessRuleException("TransicionInvalida", "Solo se puede marcar como no asistida una cita programada.");
+            if (DateTime.Now < Cita.Fecha)
+                throw new BusinessRuleException("FechaInvalida", "No se puede marcar como no asistida una cita futura.");
+            Cita.Estado = "NoAsistio";
+            if (!string.IsNullOrWhiteSpace(dto.Notas))
+                Cita.Notas = dto.Notas;
+        }
+        else
+        {
+            // Para otros cambios, usar el mapeo normal solo si se envían los campos
+            if (dto.Fecha != default(DateTime)) Cita.Fecha = dto.Fecha;
+            if (!string.IsNullOrWhiteSpace(dto.Motivo)) Cita.Motivo = dto.Motivo;
+            if (dto.TerapeutaId.HasValue) Cita.TerapeutaId = dto.TerapeutaId;
+            if (dto.TipoSesionId.HasValue) Cita.TipoSesionId = dto.TipoSesionId;
+            if (dto.DuracionMinutos.HasValue) Cita.DuracionMinutos = dto.DuracionMinutos.Value;
+        }
 
         var updatedAppointment = await _unitOfWork.Citas.UpdateAsync(Cita);
         await _unitOfWork.SaveChangesAsync();

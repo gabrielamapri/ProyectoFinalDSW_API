@@ -85,9 +85,10 @@ namespace CentroTerapia.Application.Services
                     ResponsableTelefono = responsableTelefono,
                     ResponsableEmail = responsableEmail,
                     TotalCitas = totalCitas,
-                    CitasCompletadas = citasOrdenadas.Count(c => c.Estado == "Completed"),
+                    CitasCompletadas = citasOrdenadas.Count(c => c.Estado == "Completed" || c.Estado == "Completada"),
                     CitasCanceladas = citasOrdenadas.Count(c => c.Estado == "Cancelled"),
                     CitasProgramadas = citasOrdenadas.Count(c => c.Estado == "Scheduled"),
+                    CitasNoAsistidas = citasOrdenadas.Count(c => c.Estado == "NoAsistio"),
                     Citas = citasConNotas,
                     NotasRecientes = new List<NotaHistorialDto>(),
                     Pagination = new PaginationDto

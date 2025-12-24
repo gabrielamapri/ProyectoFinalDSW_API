@@ -14,6 +14,14 @@ namespace CentroTerapia.API.Controllers
         private readonly ICitaService _appointmentService;
         private readonly IMapper _mapper;
 
+
+        [HttpGet("terapeuta/{terapeutaId}")]
+        public async Task<ActionResult<IEnumerable<CitaDto>>> GetByTerapeutaId(int terapeutaId)
+        {
+            var citas = await _appointmentService.GetByTerapeutaIdAsync(terapeutaId);
+            return Ok(citas);
+        }
+
         public CitasController(ICitaService appointmentService, IMapper mapper)
         {
             _appointmentService = appointmentService;

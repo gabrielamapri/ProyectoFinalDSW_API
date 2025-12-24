@@ -34,13 +34,13 @@ namespace CentroTerapia.Application.Services
         {
             var exists = await _unitOfWork.Terapeutas.ExistsAsync(id);
             if (!exists) throw new NotFoundException("Terapeuta", id);
-            // Bloquear eliminación si existen citas asociadas (historial)
-            var hasCitas = await _unitOfWork.Citas.AnyByTerapeutaIdAsync(id);
-            if (hasCitas)
+            // Bloquear eliminación si existen franjas asociadas
+            var terapeuta = await _unitOfWork.Terapeutas.GetWithDetailsAsync(id);
+            if (terapeuta?.Franjas != null && terapeuta.Franjas.Count > 0)
             {
                 throw new BusinessRuleException(
-                    "TerapeutaTieneHistorial",
-                    "No se puede eliminar. Tiene historial asociado.");
+                    "TerapeutaTieneFranja",
+                    "No se puede eliminar, tiene franja de horario asociada.");
             }
             var result = await _unitOfWork.Terapeutas.DeleteAsync(id);
             await _unitOfWork.SaveChangesAsync();

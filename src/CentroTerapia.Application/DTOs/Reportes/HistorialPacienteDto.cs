@@ -2,6 +2,7 @@ namespace CentroTerapia.Application.DTOs.Reportes
 {
     public class HistorialPacienteDto
     {
+        public int CitasNoAsistidas { get; set; }
         public int PacienteId { get; set; }
         public string PacienteNombre { get; set; } = string.Empty;
         public string PacienteDNI { get; set; } = string.Empty;

@@ -5,6 +5,7 @@ namespace CentroTerapia.Application.Interfaces
 {
     public interface ICitaService
     {
+        Task<IEnumerable<CitaDto>> GetByTerapeutaIdAsync(int terapeutaId);
         Task<CitaDto> GetByIdAsync(int id);
         Task<IEnumerable<CitaDto>> GetAllAsync();
         Task<IEnumerable<CitaDto>> GetAllAsync(string? search = null);
@@ -13,7 +14,6 @@ namespace CentroTerapia.Application.Interfaces
         Task<CitaDto> ReprogramAsync(int id, ReprogramCitaDto dto);
         Task<bool> DeleteAsync(int id);
         Task<bool> CancelAsync(int id);
-
         Task<IEnumerable<CitaDto>> GetByPacienteIdAsync(int pacienteId);
         Task<IEnumerable<CitaDto>> GetByDateRangeAsync(DateTime startDate, DateTime endDate);
         Task<IEnumerable<CitaDto>> GetByStatusAsync(string status);
