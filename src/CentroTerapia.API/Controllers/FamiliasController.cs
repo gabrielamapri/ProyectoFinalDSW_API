@@ -99,6 +99,10 @@ namespace CentroTerapia.API.Controllers
             {
                 return NotFound(new { message = ex.Message });
             }
+            catch (BusinessRuleException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
     }
 }

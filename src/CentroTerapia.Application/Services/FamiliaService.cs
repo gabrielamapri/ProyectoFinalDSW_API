@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using AutoMapper;
 using Microsoft.Extensions.Logging;
 using CentroTerapia.Application.DTOs.Familia;
@@ -35,6 +36,16 @@ namespace CentroTerapia.Application.Services
         {
             var exists = await _unitOfWork.Familias.ExistsAsync(id);
             if (!exists) throw new NotFoundException("Familia", id);
+
+            // Bloquear eliminación si existen pacientes asociados
+            var pacientes = await _unitOfWork.Pacientes.GetByFamiliaIdAsync(id) ?? Enumerable.Empty<Paciente>();
+            if (pacientes.Any())
+            {
+                throw new BusinessRuleException(
+                    "FamiliaTienePacientes",
+                    "No se puede eliminar. Tiene pacientes asociados.");
+            }
+
             var result = await _unitOfWork.Familias.DeleteAsync(id);
             await _unitOfWork.SaveChangesAsync();
             return result;

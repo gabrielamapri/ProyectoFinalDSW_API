@@ -5,6 +5,7 @@ using CentroTerapia.Application.Interfaces;
 using CentroTerapia.Domain.Entities;
 using CentroTerapia.Domain.Ports.Out;
 using CentroTerapia.Domain.Exceptions;
+using System.Linq;
 
 namespace CentroTerapia.Application.Services
 {
@@ -55,6 +56,16 @@ namespace CentroTerapia.Application.Services
         {
             var exists = await _unitOfWork.Pacientes.ExistsAsync(id);
             if (!exists) throw new NotFoundException("Paciente", id);
+
+            // Bloquear eliminación si tiene historial de citas (cualquier estado)
+            var citas = await _unitOfWork.Citas.GetByPacienteIdAsync(id) ?? Enumerable.Empty<Domain.Entities.Cita>();
+            if (citas.Any())
+            {
+                throw new BusinessRuleException(
+                    "PacienteTieneHistorial",
+                    "No se puede eliminar. Tiene historial asociado.");
+            }
+
             var result = await _unitOfWork.Pacientes.DeleteAsync(id);
             await _unitOfWork.SaveChangesAsync();
             return result;
