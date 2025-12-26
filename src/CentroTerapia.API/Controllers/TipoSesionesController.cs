@@ -17,6 +17,7 @@ namespace CentroTerapia.API.Controllers
             _service = service;
         }
 
+
         [HttpGet]
         [AllowAnonymous]
         public async Task<ActionResult<IEnumerable<TipoSesionDto>>> GetAll([FromQuery] string? search = null)

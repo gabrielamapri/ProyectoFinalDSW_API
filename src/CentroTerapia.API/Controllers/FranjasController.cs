@@ -25,6 +25,21 @@ namespace CentroTerapia.API.Controllers
             return Ok(items);
         }
 
+        // Endpoint seguro: devuelve solo las franjas del terapeuta autenticado
+        [HttpGet("mis-franjas")]
+        [Authorize(Roles = "Terapeuta")]
+        public async Task<ActionResult<IEnumerable<FranjaDisponibilidadDto>>> GetOwnFranjas()
+        {
+            // Extraer el id del terapeuta desde el token JWT
+            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "sub" || c.Type.EndsWith("/nameidentifier") || c.Type.ToLower().Contains("id"));
+            if (userIdClaim == null || string.IsNullOrEmpty(userIdClaim.Value))
+                return Unauthorized(new { message = "No se pudo identificar el terapeuta en el token." });
+            if (!int.TryParse(userIdClaim.Value, out int terapeutaId))
+                return Unauthorized(new { message = "El id del terapeuta no es válido." });
+            var items = await _service.GetByTerapeutaIdAsync(terapeutaId);
+            return Ok(items);
+        }
+
         [HttpGet("{id}")]
         public async Task<ActionResult<FranjaDisponibilidadDto>> GetById(int id)
         {

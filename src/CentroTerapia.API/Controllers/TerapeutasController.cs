@@ -18,6 +18,7 @@ namespace CentroTerapia.API.Controllers
             _service = service;
         }
 
+
         [HttpGet]
         public async Task<ActionResult<IEnumerable<object>>> GetAll()
         {
