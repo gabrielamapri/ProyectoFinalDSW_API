@@ -71,26 +71,20 @@ namespace CentroTerapia.API.Controllers
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
 
-        [HttpPut("{id}")]
-        public async Task<ActionResult<FranjaDisponibilidadDto>> Update(int id, [FromBody] CreateFranjaDto dto)
-        {
-            try
-            {
-                var updated = await _service.UpdateAsync(id, dto);
-                return Ok(updated);
-            }
-            catch (NotFoundException ex)
-            {
-                return NotFound(new { message = ex.Message });
-            }
-        }
 
         [HttpDelete("{id}")]
         public async Task<ActionResult> Delete(int id)
         {
             try
             {
-                await _service.DeleteAsync(id);
+                var result = await _service.DeleteAsync(id);
+                if (result.FutureAppointments != null && result.FutureAppointments.Count > 0)
+                {
+                    return Ok(new {
+                        warning = "La franja fue eliminada, pero había citas futuras asociadas. Avisar a:",
+                        affectedAppointments = result.FutureAppointments
+                    });
+                }
                 return NoContent();
             }
             catch (NotFoundException ex)

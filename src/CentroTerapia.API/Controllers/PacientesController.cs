@@ -20,7 +20,7 @@ namespace CentroTerapia.API.Controllers
         }
 
         // Solo Admin puede ver la lista global de pacientes
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Terapeuta")]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<PacienteDto>>> GetAll()
         {
@@ -74,7 +74,7 @@ namespace CentroTerapia.API.Controllers
         [Authorize(Roles = "Admin")]
         [HttpPost]
 
-        [Authorize(Roles = "Admin,Terapeuta,Padre")]
+        [Authorize(Roles = "Admin,Padre")]
         [HttpPost]
         public async Task<ActionResult<PacienteDto>> Create([FromBody] CreatePacienteDto dto)
         {

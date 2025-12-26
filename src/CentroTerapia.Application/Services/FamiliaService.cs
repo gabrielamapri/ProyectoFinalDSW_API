@@ -63,6 +63,7 @@ namespace CentroTerapia.Application.Services
                 items = items.Where(f => (f.ResponsablePrincipalEmail ?? "").Trim().ToLower() == userCorreo.Trim().ToLower());
                 _logger.LogInformation($"[GetAllAsync] Familias filtradas: {items.Count()} de {prevCount}");
             }
+            // Si es Terapeuta o Admin, no se filtra: pueden ver todas las familias
             return _mapper.Map<IEnumerable<FamiliaDto>>(items);
         }
 
@@ -77,6 +78,7 @@ namespace CentroTerapia.Application.Services
                 allItems = allItems.Where(f => (f.ResponsablePrincipalEmail ?? "").Trim().ToLower() == userCorreo.Trim().ToLower());
                 _logger.LogInformation($"[GetPagedAsync] Familias filtradas: {allItems.Count()} de {prevCount}");
             }
+            // Si es Terapeuta o Admin, no se filtra: pueden ver todas las familias
             if (!string.IsNullOrWhiteSpace(search))
             {
                 var s = search.Trim().ToLower();

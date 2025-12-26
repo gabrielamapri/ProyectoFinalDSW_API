@@ -30,13 +30,60 @@ namespace CentroTerapia.Application.Services
             return _mapper.Map<FranjaDisponibilidadDto>(created);
         }
 
-        public async Task<bool> DeleteAsync(int id)
+        public async Task<CentroTerapia.Application.DTOs.Franja.DeleteFranjaResultDto> DeleteAsync(int id)
         {
             var exists = await _unitOfWork.Franjas.ExistsAsync(id);
             if (!exists) throw new NotFoundException("FranjaDisponibilidad", id);
+
+            // Obtener la franja a eliminar
+            var franja = await _unitOfWork.Franjas.GetByIdWithRelationsAsync(id);
+            if (franja == null) throw new NotFoundException("FranjaDisponibilidad", id);
+
+            var now = DateTime.Now;
+            // Obtener citas futuras del terapeuta
+            var citasFuturas = (await _unitOfWork.Citas.GetAllWithRelationsAsync())
+                .Where(c => c.Estado != "Cancelled" && c.Fecha > now && c.TerapeutaId == franja.TerapeutaId)
+                .Where(c => {
+                    // Si la franja es recurrente, coincide día de semana y horario
+                    if (franja.Recurrente && franja.DiaSemana.HasValue) {
+                        var citaDay = (int)c.Fecha.DayOfWeek;
+                        if (citaDay != franja.DiaSemana.Value) return false;
+                        var hora = c.Fecha.TimeOfDay;
+                        return hora >= franja.HoraInicio && hora < franja.HoraFin;
+                    }
+                    // Si la franja es puntual, coincide fecha exacta y horario
+                    if (!franja.Recurrente && franja.Fecha.HasValue) {
+                        if (c.Fecha.Date != franja.Fecha.Value.Date) return false;
+                        var hora = c.Fecha.TimeOfDay;
+                        return hora >= franja.HoraInicio && hora < franja.HoraFin;
+                    }
+                    return false;
+                })
+                .Select(c => new CentroTerapia.Application.DTOs.Cita.CitaAlertaDto
+                {
+                    Id = c.Id,
+                    Fecha = c.Fecha,
+                    PacienteId = c.PacienteId,
+                    PacienteNombre = c.Paciente != null ? c.Paciente.Nombres + " " + c.Paciente.Apellidos : string.Empty,
+                    ResponsableNombre = c.Paciente?.Familia?.ResponsablePrincipalNombre != null ?
+                        (c.Paciente.Familia.ResponsablePrincipalNombre + (string.IsNullOrWhiteSpace(c.Paciente.Familia.ResponsablePrincipalApellido) ? "" : (" " + c.Paciente.Familia.ResponsablePrincipalApellido))) : string.Empty,
+                    ResponsableTelefono = c.Paciente?.Familia?.ResponsablePrincipalTelefono ?? string.Empty,
+                    ResponsableEmail = c.Paciente?.Familia?.ResponsablePrincipalEmail ?? string.Empty,
+                    Estado = c.Estado,
+                    TipoSesionId = c.TipoSesionId,
+                    TipoSesionNombre = c.TipoSesion?.Nombre ?? string.Empty
+                })
+                .ToList();
+
+            // Eliminar la franja
             var result = await _unitOfWork.Franjas.DeleteAsync(id);
             await _unitOfWork.SaveChangesAsync();
-            return result;
+
+            return new CentroTerapia.Application.DTOs.Franja.DeleteFranjaResultDto
+            {
+                Deleted = result,
+                FutureAppointments = citasFuturas
+            };
         }
 
         public async Task<IEnumerable<FranjaDisponibilidadDto>> GetAllAsync()
@@ -74,17 +121,6 @@ namespace CentroTerapia.Application.Services
             return _mapper.Map<IEnumerable<FranjaDisponibilidadDto>>(items);
         }
 
-        public async Task<FranjaDisponibilidadDto> UpdateAsync(int id, CreateFranjaDto dto)
-        {
-            var item = await _unitOfWork.Franjas.GetByIdWithRelationsAsync(id);
-            if (item == null) throw new NotFoundException("FranjaDisponibilidad", id);
-            _mapper.Map(dto, item);
-            var updated = await _unitOfWork.Franjas.UpdateAsync(item);
-            await _unitOfWork.SaveChangesAsync();
-            // reload with relations to include Terapeuta
-            var reloaded = await _unitOfWork.Franjas.GetByIdWithRelationsAsync(updated.Id);
-            return _mapper.Map<FranjaDisponibilidadDto>(reloaded ?? updated);
-        }
 
         public async Task<IEnumerable<CentroTerapia.Application.DTOs.Franja.SlotDto>> GetAvailableSlotsAsync(int terapeutaId, DateTime date, int duracionMinutos)
         {

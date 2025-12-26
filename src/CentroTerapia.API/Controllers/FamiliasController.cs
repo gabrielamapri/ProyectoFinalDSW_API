@@ -21,7 +21,7 @@ namespace CentroTerapia.API.Controllers
         }
 
         [HttpGet]
-        [Authorize(Roles = "Admin,Padre")]
+        [Authorize(Roles = "Admin,Padre,Terapeuta")]
         public async Task<ActionResult<IEnumerable<FamiliaDto>>> GetAll()
         {
             var q = HttpContext.Request.Query;
@@ -36,7 +36,7 @@ namespace CentroTerapia.API.Controllers
         }
 
         [HttpGet("{id}")]
-        [Authorize(Roles = "Admin,Padre")]
+        [Authorize(Roles = "Admin,Padre,Terapeuta")]
         public async Task<ActionResult<FamiliaDto>> GetById(int id)
         {
             try
@@ -53,7 +53,7 @@ namespace CentroTerapia.API.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Padre")]
         public async Task<ActionResult<FamiliaDto>> Create([FromBody] CreateFamiliaDto dto)
         {
             var created = await _service.CreateAsync(dto);
@@ -96,6 +96,7 @@ namespace CentroTerapia.API.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin,Padre")]
         public async Task<ActionResult> Delete(int id)
         {
             try

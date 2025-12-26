@@ -11,29 +11,26 @@ START TRANSACTION;
 -- Ejemplo C#: BCrypt.Net.BCrypt.HashPassword("TuPasswordSeguro123!")
 
 
+-- Admin
 INSERT INTO Users (Correo, HashContrasena, Nombres, Apellidos, Rol, FechaCreacion, Activo)
 VALUES ('admin@centro.local', '$2a$11$MSFHhJuQWAooQDCzfZKoNuCKgY/B/lr40SF8ZDsa9I72gW.ic.VJm', 'Admin', 'Sistema', 'Admin', NOW(), 1);
-SET @userAdminId = LAST_INSERT_ID();
 
--- Terapeutas
+-- Terapeuta
 INSERT INTO Users (Correo, HashContrasena, Nombres, Apellidos, Rol, FechaCreacion, Activo)
-VALUES ('terapeuta1@centro.local', '$2a$11$MSFHhJuQWAooQDCzfZKoNuCKgY/B/lr40SF8ZDsa9I72gW.ic.VJm', 'Terapeuta', 'Uno', 'Terapeuta', NOW(), 1);
-SET @userTerapeuta1Id = LAST_INSERT_ID();
+VALUES ('terapeuta@centro.local', '$2a$11$MSFHhJuQWAooQDCzfZKoNuCKgY/B/lr40SF8ZDsa9I72gW.ic.VJm', 'Terapeuta', 'Ejemplo', 'Terapeuta', NOW(), 1);
 
+-- Padre
 INSERT INTO Users (Correo, HashContrasena, Nombres, Apellidos, Rol, FechaCreacion, Activo)
-VALUES ('terapeuta2@centro.local', '$2a$11$MSFHhJuQWAooQDCzfZKoNuCKgY/B/lr40SF8ZDsa9I72gW.ic.VJm', 'Terapeuta', 'Dos', 'Terapeuta', NOW(), 1);
-SET @userTerapeuta2Id = LAST_INSERT_ID();
+VALUES ('familia@centro.local', '$2a$11$MSFHhJuQWAooQDCzfZKoNuCKgY/B/lr40SF8ZDsa9I72gW.ic.VJm', 'Padre', 'Familia', 'Padre', NOW(), 1);
 
 
--- Familia 1 (Responsable: terapeuta1@centro.local)
+
 INSERT INTO Familias (TelefonoContacto, ResponsablePrincipalNombre, ResponsablePrincipalApellido, ResponsablePrincipalDNI, ResponsablePrincipalDireccion, ResponsablePrincipalEmail, ResponsablePrincipalTelefono, ResponsablePrincipalRelacion, Responsable2Nombre, Responsable2Apellido, Responsable2DNI, Responsable2Direccion, Responsable2Telefono, Responsable2Relacion, FechaCreacion)
-VALUES ('987654321', 'Familia', 'Uno', '44345678', 'Av. Siempre Viva 123', 'familia1@centro.local', '987654321', 'Padre', Maria, López, NULL, NULL, NULL, NULL, NOW());
+VALUES ('987654321', 'María', 'Gómez', '12345678', 'Av. Siempre Viva 123', 'familia@centro.local', '987654321', 'Madre', 'Carlos', 'Gómez', '87654321', 'Av. Siempre Viva 123', '987654322', 'Padre', NOW());
 SET @familia1 = LAST_INSERT_ID();
 
-
--- Familia 2 (Responsable: terapeuta2@centro.local)
 INSERT INTO Familias (TelefonoContacto, ResponsablePrincipalNombre, ResponsablePrincipalApellido, ResponsablePrincipalDNI, ResponsablePrincipalDireccion, ResponsablePrincipalEmail, ResponsablePrincipalTelefono, ResponsablePrincipalRelacion, Responsable2Nombre, Responsable2Apellido, Responsable2DNI, Responsable2Direccion, Responsable2Telefono, Responsable2Relacion, FechaCreacion)
-VALUES ('912345000', 'Terapeuta', 'Dos', '23456789', 'Calle Luna 45', 'terapeuta2@centro.local', '912345000', 'Padre', NULL, NULL, NULL, NULL, NULL, NULL, NOW());
+VALUES ('912345000', 'Lucía', 'Fernández', '23456789', 'Calle Luna 45', 'lucia.fernandez@email.com', '912345000', 'Madre', 'Sofía', 'Fernández', '33445566', 'Calle Luna 45', '912345001', 'Tía', NOW());
 SET @familia2 = LAST_INSERT_ID();
 
 INSERT INTO Familias (TelefonoContacto, ResponsablePrincipalNombre, ResponsablePrincipalApellido, ResponsablePrincipalDNI, ResponsablePrincipalDireccion, ResponsablePrincipalEmail, ResponsablePrincipalTelefono, ResponsablePrincipalRelacion, Responsable2Nombre, Responsable2Apellido, Responsable2DNI, Responsable2Direccion, Responsable2Telefono, Responsable2Relacion, FechaCreacion)
@@ -60,6 +57,7 @@ INSERT INTO Pacientes (Nombres, Apellidos, FechaNacimiento, Sexo, FechaCreacion,
 VALUES ('Diego', 'Ramos', '2017-12-12', 0, NOW(), 'Contacto N/A', '000000000', @familia3, '55555555');
 SET @paciente5 = LAST_INSERT_ID();
 
+
 -- 4) Especialidades (crear registros referenciables)
 INSERT INTO Especialidades (Nombre, Descripcion, FechaCreacion)
 VALUES ('Terapia del Lenguaje', 'Intervenciones para trastornos del lenguaje', NOW());
@@ -79,11 +77,11 @@ SET @esp4Id = LAST_INSERT_ID();
 
 -- Se incluyen ahora DNI y Correo (ambos opcionales pero rellenados para consistencia)
 INSERT INTO Terapeutas (Nombres, Apellidos, DNI, Correo, EspecialidadId, Presentacion, Telefono, Direccion, Activo, FechaCreacion)
-VALUES ('Ana', 'López', '46881234', 'terapeuta1@centro.local', @esp1Id, 'Fonoaudióloga con 8 años de experiencia', '912345678', 'Calle Falsa 45', 1, NOW());
+VALUES ('Ana', 'López', '46881234', 'terapeuta@centro.local', @esp1Id, 'Fonoaudióloga con 8 años de experiencia', '912345678', 'Calle Falsa 45', 1, NOW());
 SET @terapeuta1Id = LAST_INSERT_ID();
 
 INSERT INTO Terapeutas (Nombres, Apellidos, DNI, Correo, EspecialidadId, Presentacion, Telefono, Direccion, Activo, FechaCreacion)
-VALUES ('Raúl', 'Pérez', '42119876', '@centro.local', @esp3Id, 'Fisioterapeuta pediátrico', '912345679', 'Calle Real 12', 1, NOW());
+VALUES ('Raúl', 'Pérez', '42119876', 'raul.perez@centro.local', @esp3Id, 'Fisioterapeuta pediátrico', '912345679', 'Calle Real 12', 1, NOW());
 SET @terapeuta2Id = LAST_INSERT_ID();
 
 INSERT INTO Terapeutas (Nombres, Apellidos, DNI, Correo, EspecialidadId, Presentacion, Telefono, Direccion, Activo, FechaCreacion)
