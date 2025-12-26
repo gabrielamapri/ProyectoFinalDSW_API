@@ -13,6 +13,24 @@ namespace CentroTerapia.API.Controllers
     [Authorize] 
     public class CitasController : ControllerBase
     {
+        [Authorize(Roles = "Admin,Terapeuta")]
+        [HttpPut("{id}")]
+        public async Task<ActionResult<CitaDto>> Update(int id, [FromBody] UpdateCitaDto dto)
+        {
+            try
+            {
+                var cita = await _appointmentService.UpdateAsync(id, dto);
+                return Ok(cita);
+            }
+            catch (NotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (BusinessRuleException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
         private readonly ICitaService _appointmentService;
         private readonly IMapper _mapper;
         private readonly IFamiliaService _familiaService;
@@ -86,6 +104,17 @@ namespace CentroTerapia.API.Controllers
         [HttpGet("terapeuta/{terapeutaId}")]
         public async Task<ActionResult<IEnumerable<CitaDto>>> GetByTerapeutaId(int terapeutaId)
         {
+            // Si el usuario es Terapeuta, forzar el id desde el claim NameIdentifier
+            if (User.IsInRole("Terapeuta"))
+            {
+                var claim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(claim) || !int.TryParse(claim, out int idFromToken))
+                {
+                    return Forbid("No se pudo identificar el terapeuta en el token.");
+                }
+                terapeutaId = idFromToken;
+            }
+            // Admin puede consultar cualquier terapeuta
             var citas = await _appointmentService.GetByTerapeutaIdAsync(terapeutaId);
             return Ok(citas);
         }

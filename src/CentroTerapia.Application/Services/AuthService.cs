@@ -68,13 +68,29 @@ namespace CentroTerapia.Application.Services
 
             var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-            var claims = new List<Claim>
+
+            var claims = new List<Claim>();
+            if (user.Rol == "Terapeuta")
             {
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Email, user.Correo),
-                new Claim(ClaimTypes.Name, $"{user.Nombres} {user.Apellidos}"),
-                new Claim(ClaimTypes.Role, user.Rol)
-            };
+                // Buscar terapeuta por correo
+                var terapeuta = _unitOfWork.Terapeutas.GetAllAsync().GetAwaiter().GetResult()
+                    .FirstOrDefault(t => (t.Correo ?? "").Trim().ToLower() == user.Correo.Trim().ToLower());
+                if (terapeuta != null)
+                {
+                    claims.Add(new Claim(ClaimTypes.NameIdentifier, terapeuta.Id.ToString()));
+                }
+                else
+                {
+                    claims.Add(new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()));
+                }
+            }
+            else
+            {
+                claims.Add(new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()));
+            }
+            claims.Add(new Claim(ClaimTypes.Email, user.Correo));
+            claims.Add(new Claim(ClaimTypes.Name, $"{user.Nombres} {user.Apellidos}"));
+            claims.Add(new Claim(ClaimTypes.Role, user.Rol));
 
             // Si el usuario es Padre, agregar el claim FamiliaId
             if (user.Rol == "Padre")

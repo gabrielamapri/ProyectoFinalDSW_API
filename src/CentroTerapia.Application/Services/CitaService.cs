@@ -145,6 +145,8 @@ namespace CentroTerapia.Application.Services
 
             if (dto.Fecha != default) cita.Fecha = dto.Fecha;
             if (!string.IsNullOrWhiteSpace(dto.Motivo)) cita.Motivo = dto.Motivo;
+            if (!string.IsNullOrWhiteSpace(dto.Estado)) cita.Estado = dto.Estado;
+            if (!string.IsNullOrWhiteSpace(dto.Notas)) cita.Notas = dto.Notas;
             if (dto.TerapeutaId.HasValue) cita.TerapeutaId = dto.TerapeutaId;
             if (dto.TipoSesionId.HasValue) cita.TipoSesionId = dto.TipoSesionId;
             if (dto.DuracionMinutos.HasValue) cita.DuracionMinutos = dto.DuracionMinutos.Value;
