@@ -25,6 +25,18 @@ namespace CentroTerapia.Application.Services
         {
             var entity = _mapper.Map<NotaSesion>(dto);
             var created = await _unitOfWork.NotasSesion.CreateAsync(entity);
+
+            // Marcar la cita como completada si existe
+            if (entity.CitaId > 0)
+            {
+                var cita = await _unitOfWork.Citas.GetByIdAsync(entity.CitaId);
+                if (cita != null && cita.Estado != "Completada")
+                {
+                    cita.Estado = "Completada";
+                    await _unitOfWork.Citas.UpdateAsync(cita);
+                }
+            }
+
             await _unitOfWork.SaveChangesAsync();
             return _mapper.Map<NotaSesionDto>(created);
         }

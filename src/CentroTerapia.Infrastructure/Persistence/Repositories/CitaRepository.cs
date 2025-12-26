@@ -78,6 +78,12 @@ namespace CentroTerapia.Infrastructure.Persistence.Repositories
 
             public async Task<IEnumerable<Cita>> GetByTerapeutaAndDateRangeAsync(int terapeutaId, DateTime startDate, DateTime endDate)
             {
+                // Si es un solo día, ampliar el rango a todo ese día
+                if (startDate.Date == endDate.Date)
+                {
+                    startDate = startDate.Date;
+                    endDate = startDate.Date.AddDays(1).AddMilliseconds(-1); // 23:59:59.999
+                }
                 return await _dbSet
                     .Where(a => a.TerapeutaId == terapeutaId && a.Fecha >= startDate && a.Fecha <= endDate && a.Estado == "Scheduled")
                     .Include(a => a.Paciente)

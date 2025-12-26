@@ -14,23 +14,24 @@ namespace CentroTerapia.API.Controllers
     public class CitasController : ControllerBase
     {
         [Authorize(Roles = "Admin,Terapeuta")]
-        [HttpPut("{id}")]
-        public async Task<ActionResult<CitaDto>> Update(int id, [FromBody] UpdateCitaDto dto)
+        [HttpPatch("{id}/noasistio")]
+        public async Task<ActionResult> MarcarNoAsistio(int id)
         {
             try
             {
-                var cita = await _appointmentService.UpdateAsync(id, dto);
-                return Ok(cita);
+                await _appointmentService.MarcarNoAsistioAsync(id);
+                return Ok(new { message = "Cita marcada como No Asistió" });
             }
             catch (NotFoundException ex)
             {
                 return NotFound(new { message = ex.Message });
             }
-            catch (BusinessRuleException ex)
+            catch (Exception ex)
             {
                 return BadRequest(new { message = ex.Message });
             }
         }
+
         private readonly ICitaService _appointmentService;
         private readonly IMapper _mapper;
         private readonly IFamiliaService _familiaService;
@@ -42,7 +43,23 @@ namespace CentroTerapia.API.Controllers
             _familiaService = familiaService;
         }
 
-        // --- ENDPOINTS PARA FAMILIAS (PADRES) ---
+        [Authorize(Roles = "Admin,Terapeuta")]
+        [HttpGet("terapeuta/{terapeutaId}/rango-fechas")]
+        public async Task<ActionResult<IEnumerable<CitaAlertaDto>>> GetByTerapeutaAndDateRange(int terapeutaId, [FromQuery] DateTime startDate, [FromQuery] DateTime endDate)
+        {
+            // Si el usuario es Terapeuta, forzar el id desde el claim NameIdentifier
+            if (User.IsInRole("Terapeuta"))
+            {
+                var claim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(claim) || !int.TryParse(claim, out int idFromToken))
+                {
+                    return Forbid("No se pudo identificar el terapeuta en el token.");
+                }
+                terapeutaId = idFromToken;
+            }
+            var citas = await _appointmentService.GetByTerapeutaAndDateRangeAsync(terapeutaId, startDate, endDate);
+            return Ok(citas);
+        }
 
         [Authorize(Roles = "Padre")]
         [HttpGet("mis-citas")]

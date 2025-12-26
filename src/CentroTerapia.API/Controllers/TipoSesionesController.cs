@@ -77,6 +77,10 @@ namespace CentroTerapia.API.Controllers
             {
                 return NotFound(new { message = ex.Message });
             }
+            catch (Microsoft.EntityFrameworkCore.DbUpdateException)
+            {
+                return Conflict(new { message = "No se puede eliminar. Tiene citas asociadas." });
+            }
         }
     }
 }

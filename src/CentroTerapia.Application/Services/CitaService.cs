@@ -8,6 +8,7 @@ using CentroTerapia.Domain.Ports.Out;
 
 namespace CentroTerapia.Application.Services
 {
+
     public class CitaService : ICitaService
     {
         private readonly IUnitOfWork _unitOfWork;
@@ -19,6 +20,20 @@ namespace CentroTerapia.Application.Services
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _logger = logger;
+        }
+
+        /// <summary>
+        /// Marca una cita como NoAsistio
+        /// </summary>
+        public async Task<bool> MarcarNoAsistioAsync(int id)
+        {
+            var cita = await _unitOfWork.Citas.GetByIdAsync(id);
+            if (cita == null) throw new NotFoundException("Cita", id);
+            if (cita.Estado == "NoAsistio") return true;
+            cita.Estado = "NoAsistio";
+            await _unitOfWork.Citas.UpdateAsync(cita);
+            await _unitOfWork.SaveChangesAsync();
+            return true;
         }
 
         #region Read Operations

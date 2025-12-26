@@ -17,6 +17,7 @@ namespace CentroTerapia.Application.Interfaces
         Task<CitaDto> ReprogramAsync(int id, ReprogramCitaDto dto);
         Task<bool> CancelAsync(int id);
         Task<bool> DeleteAsync(int id);
+        Task<bool> MarcarNoAsistioAsync(int id);
     }
 }
 
