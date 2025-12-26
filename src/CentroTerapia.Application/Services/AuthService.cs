@@ -64,7 +64,7 @@ namespace CentroTerapia.Application.Services
         }
         public string GenerateJwtToken(User user)
         {
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key not configured")));
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JWT_SECRET"] ?? throw new InvalidOperationException("JWT_SECRET not configured")));
 
             var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
@@ -89,8 +89,8 @@ namespace CentroTerapia.Application.Services
             }
 
             var token = new JwtSecurityToken(
-                issuer: _configuration["Jwt:Issuer"],
-                audience: _configuration["Jwt:Audience"],
+                issuer: _configuration["JWT_ISSUER"],
+                audience: _configuration["JWT_AUDIENCE"],
                 claims: claims,
                 expires: DateTime.UtcNow.AddHours(2),
                 signingCredentials: credentials

@@ -41,9 +41,9 @@ DB_PORT=3306
 DB_NAME=CentroTerapiaDb
 DB_USER=root
 DB_PASSWORD=YourPassword
-Jwt__Key=REPLACE_WITH_STRONG_KEY
-Jwt__Issuer=CentroTerapia
-Jwt__Audience=CentroTerapiaClients
+JWT_SECRET=REPLACE_WITH_STRONG_KEY
+JWT_ISSUER=CentroTerapia
+JWT_AUDIENCE=CentroTerapiaClients
 ```
 
 
@@ -86,7 +86,7 @@ Endpoints comunes (vista rápida)
 
 Notas adicionales
 - El puerto por defecto está fijado en `5291` en `Program.cs` (se puede cambiar mediante variables de entorno o modificar el código).
-- Asegúrese de usar una `Jwt:Key` fuerte en producción y de no subir secretos a Git.
+- Asegúrese de usar una `JWT_SECRET` fuerte en producción y de no subir secretos a Git.
 
 
 Archivos importantes
