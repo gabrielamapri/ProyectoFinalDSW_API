@@ -12,80 +12,92 @@ namespace CentroTerapia.Infrastructure.Persistence.Repositories
         {
         }
 
-        public async Task<IEnumerable<Cita>> GetByPacienteIdAsync(int pacienteId)
-        {
-            return await _dbSet
-                .Where(a => a.PacienteId == pacienteId)
-                .Include(a => a.Paciente)
-                    .ThenInclude(p => p!.Familia)
-                .Include(a => a.TipoSesion)
-                    .ThenInclude(ts => ts!.Especialidad)
-                .Include(a => a.Terapeuta)
-                .OrderByDescending(a => a.Fecha)
-                .ToListAsync();
-        }
+            public async Task<IEnumerable<Cita>> GetByPacienteIdAsync(int pacienteId)
+            {
+                return await _dbSet
+                    .Where(a => a.PacienteId == pacienteId)
+                    .Include(a => a.Paciente)
+                        .ThenInclude(p => p!.Familia)
+                    .Include(a => a.TipoSesion)
+                        .ThenInclude(ts => ts!.Especialidad)
+                    .Include(a => a.Terapeuta)
+                    .OrderByDescending(a => a.Fecha)
+                    .ToListAsync();
+            }
 
-        public async Task<IEnumerable<Cita>> GetByDateRangeAsync(DateTime startDate, DateTime endDate)
-        {
-            return await _dbSet
-                .Where(a => a.Fecha >= startDate && a.Fecha <= endDate)
-                .Include(a => a.Paciente)
-                    .ThenInclude(p => p!.Familia)
-                .Include(a => a.TipoSesion)
-                    .ThenInclude(ts => ts!.Especialidad)
-                .Include(a => a.Terapeuta)
-                .OrderBy(a => a.Fecha)
-                .ToListAsync();
-        }
+            public async Task<IEnumerable<Cita>> GetByDateRangeAsync(DateTime startDate, DateTime endDate)
+            {
+                return await _dbSet
+                    .Where(a => a.Fecha >= startDate && a.Fecha <= endDate)
+                    .Include(a => a.Paciente)
+                        .ThenInclude(p => p!.Familia)
+                    .Include(a => a.TipoSesion)
+                        .ThenInclude(ts => ts!.Especialidad)
+                    .Include(a => a.Terapeuta)
+                    .OrderBy(a => a.Fecha)
+                    .ToListAsync();
+            }
 
-        public async Task<IEnumerable<Cita>> GetByStatusAsync(string status)
-        {
-            return await _dbSet
-                .Where(a => a.Estado == status)
-                .Include(a => a.Paciente)
-                    .ThenInclude(p => p!.Familia)
-                .Include(a => a.TipoSesion)
-                    .ThenInclude(ts => ts!.Especialidad)
-                .Include(a => a.Terapeuta)
-                .OrderByDescending(a => a.Fecha)
-                .ToListAsync();
-        }
+            public async Task<IEnumerable<Cita>> GetByStatusAsync(string status)
+            {
+                return await _dbSet
+                    .Where(a => a.Estado == status)
+                    .Include(a => a.Paciente)
+                        .ThenInclude(p => p!.Familia)
+                    .Include(a => a.TipoSesion)
+                        .ThenInclude(ts => ts!.Especialidad)
+                    .Include(a => a.Terapeuta)
+                    .OrderByDescending(a => a.Fecha)
+                    .ToListAsync();
+            }
 
-        public async Task<Cita?> GetWithPacienteAndFamiliaAsync(int id)
-        {
-            return await _dbSet
-                .Include(a => a.Paciente)
-                    .ThenInclude(p => p!.Familia)
-                .FirstOrDefaultAsync(a => a.Id == id);
-        }
+            public async Task<Cita?> GetWithPacienteAndFamiliaAsync(int id)
+            {
+                return await _dbSet
+                    .Include(a => a.Paciente)
+                        .ThenInclude(p => p!.Familia)
+                    .FirstOrDefaultAsync(a => a.Id == id);
+            }
 
-        public async Task<IEnumerable<Cita>> GetAllWithRelationsAsync()
-        {
-            return await _dbSet
-                .Include(a => a.Paciente)
-                    .ThenInclude(p => p!.Familia)
-                .Include(a => a.TipoSesion)
-                    .ThenInclude(ts => ts.Especialidad)
-                .Include(a => a.Terapeuta)
-                .OrderByDescending(a => a.Fecha)
-                .ToListAsync();
-        }
+            public async Task<IEnumerable<Cita>> GetAllWithRelationsAsync()
+            {
+                return await _dbSet
+                    .Include(a => a.Paciente)
+                        .ThenInclude(p => p!.Familia)
+                    .Include(a => a.TipoSesion)
+                        .ThenInclude(ts => ts.Especialidad)
+                    .Include(a => a.Terapeuta)
+                    .OrderByDescending(a => a.Fecha)
+                    .ToListAsync();
+            }
 
-        public async Task<bool> AnyByTerapeutaIdAsync(int terapeutaId)
-        {
-            return await _dbSet.AnyAsync(a => a.TerapeutaId == terapeutaId);
-        }
+            public async Task<bool> AnyByTerapeutaIdAsync(int terapeutaId)
+            {
+                return await _dbSet.AnyAsync(a => a.TerapeutaId == terapeutaId);
+            }
 
-        public async Task<IEnumerable<Cita>> GetByTerapeutaAndDateRangeAsync(int terapeutaId, DateTime startDate, DateTime endDate)
-        {
-            return await _dbSet
-                .Where(a => a.TerapeutaId == terapeutaId && a.Fecha >= startDate && a.Fecha <= endDate && a.Estado == "Scheduled")
-                .Include(a => a.Paciente)
-                    .ThenInclude(p => p!.Familia)
-                .Include(a => a.TipoSesion)
-                .OrderBy(a => a.Fecha)
-                .ToListAsync();
-        }
+            public async Task<IEnumerable<Cita>> GetByTerapeutaAndDateRangeAsync(int terapeutaId, DateTime startDate, DateTime endDate)
+            {
+                return await _dbSet
+                    .Where(a => a.TerapeutaId == terapeutaId && a.Fecha >= startDate && a.Fecha <= endDate && a.Estado == "Scheduled")
+                    .Include(a => a.Paciente)
+                        .ThenInclude(p => p!.Familia)
+                    .Include(a => a.TipoSesion)
+                    .OrderBy(a => a.Fecha)
+                    .ToListAsync();
+            }
+
+            public async Task<IEnumerable<Cita>> GetByPacienteIdsAsync(IEnumerable<int> pacienteIds)
+            {
+			return await _dbSet
+				.Where(a => pacienteIds.Contains(a.PacienteId))
+				.Include(a => a.Paciente)
+					.ThenInclude(p => p!.Familia)
+				.Include(a => a.TipoSesion)
+					.ThenInclude(ts => ts!.Especialidad)
+				.Include(a => a.Terapeuta)
+				.OrderByDescending(a => a.Fecha)
+				.ToListAsync();
+		}
     }
 }
-

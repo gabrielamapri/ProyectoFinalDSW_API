@@ -8,6 +8,7 @@ namespace CentroTerapia.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize(Roles = "Admin,Terapeuta")]
     public class FranjaExcepcionesController : ControllerBase
     {
         private readonly IFranjaService _service;
@@ -18,7 +19,6 @@ namespace CentroTerapia.API.Controllers
         }
 
         [HttpGet]
-        [AllowAnonymous]
         public async Task<ActionResult<IEnumerable<FranjaExcepcionDetalleDto>>> Get(
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 50,

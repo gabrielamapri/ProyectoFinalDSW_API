@@ -68,13 +68,25 @@ namespace CentroTerapia.Application.Services
 
             var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-            var claims = new[]
+            var claims = new List<Claim>
             {
-            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new Claim(ClaimTypes.Email, user.Correo),
-            new Claim(ClaimTypes.Name, $"{user.Nombres} {user.Apellidos}"),
-            new Claim(ClaimTypes.Role, user.Rol)
-        };
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim(ClaimTypes.Email, user.Correo),
+                new Claim(ClaimTypes.Name, $"{user.Nombres} {user.Apellidos}"),
+                new Claim(ClaimTypes.Role, user.Rol)
+            };
+
+            // Si el usuario es Padre, agregar el claim FamiliaId
+            if (user.Rol == "Padre")
+            {
+                // Buscar la familia asociada al usuario
+                var familia = _unitOfWork.Familias.GetAllAsync().GetAwaiter().GetResult()
+                    .FirstOrDefault(f => (f.ResponsablePrincipalEmail ?? "").Trim().ToLower() == user.Correo.Trim().ToLower());
+                if (familia != null)
+                {
+                    claims.Add(new Claim("FamiliaId", familia.Id.ToString()));
+                }
+            }
 
             var token = new JwtSecurityToken(
                 issuer: _configuration["Jwt:Issuer"],

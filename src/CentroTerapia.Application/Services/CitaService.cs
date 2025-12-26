@@ -6,10 +6,10 @@ using CentroTerapia.Domain.Entities;
 using CentroTerapia.Domain.Exceptions;
 using CentroTerapia.Domain.Ports.Out;
 
-namespace CentroTerapia.Application.Services;
+namespace CentroTerapia.Application.Services
+{
     public class CitaService : ICitaService
     {
-
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly ILogger<CitaService> _logger;
@@ -21,6 +21,52 @@ namespace CentroTerapia.Application.Services;
             _logger = logger;
         }
 
+        #region Read Operations
+
+        public async Task<CitaDto> GetByIdAsync(int id)
+        {
+            _logger.LogInformation("Retrieving Cita with ID {Id}.", id);
+            var cita = await _unitOfWork.Citas.GetWithPacienteAndFamiliaAsync(id);
+            if (cita == null)
+            {
+                _logger.LogWarning("Cita with ID {Id} not found.", id);
+                throw new NotFoundException("Cita", id);
+            }
+            return _mapper.Map<CitaDto>(cita);
+        }
+
+        public async Task<IEnumerable<CitaDto>> GetAllAsync(string? search = null)
+        {
+            _logger.LogInformation("Retrieving Citas. Search: {Search}", search ?? "(none)");
+            var citas = await _unitOfWork.Citas.GetAllWithRelationsAsync();
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                citas = FilterCitasBySearch(citas, search);
+            }
+
+            return _mapper.Map<IEnumerable<CitaDto>>(citas);
+        }
+
+        public async Task<IEnumerable<CitaDto>> GetByPacienteIdsAsync(IEnumerable<int> pacienteIds, string? search = null)
+        {
+            _logger.LogInformation("Retrieving Citas for PacienteIds. Search: {Search}", search ?? "(none)");
+            var citas = await _unitOfWork.Citas.GetByPacienteIdsAsync(pacienteIds);
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                citas = FilterCitasBySearch(citas, search);
+            }
+
+            return _mapper.Map<IEnumerable<CitaDto>>(citas);
+        }
+
+        public async Task<IEnumerable<CitaDto>> GetByPacienteIdAsync(int pacienteId)
+        {
+            var citas = await _unitOfWork.Citas.GetByPacienteIdAsync(pacienteId);
+            return _mapper.Map<IEnumerable<CitaDto>>(citas);
+        }
+
         public async Task<IEnumerable<CitaDto>> GetByTerapeutaIdAsync(int terapeutaId)
         {
             var citas = await _unitOfWork.Citas.GetAllWithRelationsAsync();
@@ -28,655 +74,236 @@ namespace CentroTerapia.Application.Services;
             return _mapper.Map<IEnumerable<CitaDto>>(filtradas);
         }
 
-    public async Task<CitaDto> GetByIdAsync(int id)
-    {
-        _logger.LogInformation("Retrieving Cita with ID {Id}.", id);
-
-        var Cita = await _unitOfWork.Citas.GetWithPacienteAndFamiliaAsync(id);
-        if (Cita == null)
+        public async Task<IEnumerable<CitaDto>> GetByDateRangeAsync(DateTime startDate, DateTime endDate)
         {
-            _logger.LogWarning("Cita with ID {AppointmentId} not found.", id);
-            throw new NotFoundException("Cita", id);
+            var citas = await _unitOfWork.Citas.GetByDateRangeAsync(startDate, endDate);
+            return _mapper.Map<IEnumerable<CitaDto>>(citas);
         }
-        _logger.LogInformation("Cita on {Fecha} found.", Cita.Fecha);
-        return _mapper.Map<CitaDto>(Cita);
-    }
 
-    public async Task<IEnumerable<CitaDto>> GetAllAsync()
-    {
-        _logger.LogInformation("Retrieving all Citas.");
-        // use repository method that includes related entities so mapping fills names
-        var Citas = await _unitOfWork.Citas.GetAllWithRelationsAsync();
-        _logger.LogInformation("{Count} Citas retrieved.", Citas.Count());
-        return _mapper.Map<IEnumerable<CitaDto>>(Citas);
-    }
-
-    public async Task<IEnumerable<CitaDto>> GetAllAsync(string? search = null)
-    {
-        _logger.LogInformation("Retrieving Citas with search: {Search}", search ?? "(none)");
-        var Citas = await _unitOfWork.Citas.GetAllWithRelationsAsync();
-        
-        if (!string.IsNullOrWhiteSpace(search))
+        public async Task<IEnumerable<CitaDto>> GetByStatusAsync(string status)
         {
-            var searchLower = search.ToLower().Trim();
-            Citas = Citas.Where(c =>
-                (c.Paciente != null && (c.Paciente.Nombres + " " + c.Paciente.Apellidos).ToLower().Contains(searchLower)) ||
-                (c.Terapeuta != null && (c.Terapeuta.Nombres + " " + c.Terapeuta.Apellidos).ToLower().Contains(searchLower)) ||
-                (c.TipoSesion != null && c.TipoSesion.Nombre != null && c.TipoSesion.Nombre.ToLower().Contains(searchLower)) ||
-                (c.TipoSesion != null && c.TipoSesion.Especialidad != null && c.TipoSesion.Especialidad.Nombre != null && c.TipoSesion.Especialidad.Nombre.ToLower().Contains(searchLower)) ||
-                (c.Estado != null && c.Estado.ToLower().Contains(searchLower)) ||
-                c.Fecha.ToString("yyyy-MM-dd").Contains(searchLower) ||
-                c.Fecha.ToString("dd/MM/yyyy").Contains(searchLower)
-            ).ToList();
+            var citas = await _unitOfWork.Citas.GetByStatusAsync(status);
+            return _mapper.Map<IEnumerable<CitaDto>>(citas);
         }
-        
-        _logger.LogInformation("{Count} Citas retrieved after search.", Citas.Count());
-        return _mapper.Map<IEnumerable<CitaDto>>(Citas);
-    }
+
+        public async Task<IEnumerable<CitaAlertaDto>> GetByTerapeutaAndDateRangeAsync(int terapeutaId, DateTime startDate, DateTime endDate)
+        {
+            var citas = await _unitOfWork.Citas.GetByTerapeutaAndDateRangeAsync(terapeutaId, startDate, endDate);
+            return _mapper.Map<IEnumerable<CitaAlertaDto>>(citas);
+        }
+
+        #endregion
+
+        #region Create & Update
 
         public async Task<CitaDto> CreateAsync(CreateCitaDto dto)
-    {
-            _logger.LogInformation("Creating a new Cita for Paciente ID {PacienteID} on {Fecha}", dto.PacienteId, dto.Fecha);
+        {
+            _logger.LogInformation("Creating a new Cita for Paciente ID {PacienteID}", dto.PacienteId);
 
-            // Normalize incoming date: use UTC for DB operations and Local for franja/time checks
+            var paciente = await _unitOfWork.Pacientes.GetByIdAsync(dto.PacienteId);
+            if (paciente == null) throw new NotFoundException("Paciente", dto.PacienteId);
+
             var dtoUtc = dto.Fecha.Kind == DateTimeKind.Utc ? dto.Fecha : dto.Fecha.ToUniversalTime();
             var dtoLocal = dtoUtc.ToLocalTime();
 
-            // Permitir programar para hoy si la hora es futura
-            if (dtoLocal.Date < DateTime.Now.Date || (dtoLocal.Date == DateTime.Now.Date && dtoLocal.TimeOfDay <= DateTime.Now.TimeOfDay))
+            if (dtoLocal <= DateTime.Now)
             {
-                _logger.LogWarning("Attempted to create Cita in the past for Paciente ID {PacienteID} on {Fecha}", dto.PacienteId, dto.Fecha);
-                throw new BusinessRuleException(
-                    "PastAppointment",
-                    "No se puede programar citas en horas pasadas.");
+                throw new BusinessRuleException("PastAppointment", "No se puede programar citas en horas pasadas.");
             }
 
-        // determine duration
-        int duration = dto.DuracionMinutos ?? 0;
-            if (duration <= 0 && dto.TipoSesionId.HasValue)
-        {
-                var tipo = await _unitOfWork.TiposSesion.GetByIdAsync(dto.TipoSesionId.Value);
-            if (tipo != null) duration = tipo.DuracionMinutos;
+            int duration = await GetDuration(dto.DuracionMinutos, dto.TipoSesionId);
+
+            await _unitOfWork.BeginTransactionAsync();
+            try
+            {
+                await ValidateTherapistAvailability(dto.TerapeutaId, dtoLocal, dtoUtc, duration);
+                await ValidatePatientRules(dto.PacienteId, dto.TerapeutaId, dtoUtc, duration);
+
+                var cita = _mapper.Map<Cita>(dto);
+                cita.Fecha = DateTime.SpecifyKind(dtoLocal, DateTimeKind.Unspecified);
+                cita.DuracionMinutos = duration;
+                cita.Estado = "Scheduled";
+
+                var created = await _unitOfWork.Citas.CreateAsync(cita);
+                await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.CommitTransactionAsync();
+
+                var result = await _unitOfWork.Citas.GetWithPacienteAndFamiliaAsync(created.Id);
+                return _mapper.Map<CitaDto>(result!);
+            }
+            catch
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                throw;
+            }
         }
-        if (duration <= 0) duration = 45; // default to 45 minutes for this center
 
-        // Additional checks: patient same-day/specialty and min gaps
-            var dayStartCheck = dtoUtc.Date;
-            var dayEndCheck = dtoUtc.Date.AddDays(1).AddTicks(-1);
-        var patientAppointments = (await _unitOfWork.Citas.GetByDateRangeAsync(dayStartCheck, dayEndCheck)).Where(a => a.PacienteId == dto.PacienteId).ToList();
-
-        // If Terapeuta provided, verify franja (respecting FranjaExcepcion) and check overlaps with buffer
-        if (dto.TerapeutaId.HasValue)
+        public async Task<CitaDto> UpdateAsync(int id, UpdateCitaDto dto)
         {
-            var franjas = await _unitOfWork.Franjas.GetByTerapeutaIdAsync(dto.TerapeutaId.Value);
-                // use local time of the requested appointment to compare with franja TimeSpans
-                var appointmentTime = dtoLocal.TimeOfDay;
-                var appointmentEndTime = appointmentTime.Add(TimeSpan.FromMinutes(duration));
+            var cita = await _unitOfWork.Citas.GetByIdAsync(id);
+            if (cita == null) throw new NotFoundException("Cita", id);
 
-            var covers = false;
-                foreach (var f in franjas)
+            if (dto.Fecha != default) cita.Fecha = dto.Fecha;
+            if (!string.IsNullOrWhiteSpace(dto.Motivo)) cita.Motivo = dto.Motivo;
+            if (dto.TerapeutaId.HasValue) cita.TerapeutaId = dto.TerapeutaId;
+            if (dto.TipoSesionId.HasValue) cita.TipoSesionId = dto.TipoSesionId;
+            if (dto.DuracionMinutos.HasValue) cita.DuracionMinutos = dto.DuracionMinutos.Value;
+
+            await _unitOfWork.Citas.UpdateAsync(cita);
+            await _unitOfWork.SaveChangesAsync();
+            return _mapper.Map<CitaDto>(cita);
+        }
+
+        public async Task<CitaDto> ReprogramAsync(int id, ReprogramCitaDto dto)
+        {
+            var cita = await _unitOfWork.Citas.GetByIdAsync(id);
+            if (cita == null) throw new NotFoundException("Cita", id);
+
+            if ((cita.Fecha - DateTime.Now).TotalHours < 12)
+            {
+                throw new BusinessRuleException("RescheduleNotAllowed", "Menos de 12 horas para la cita.");
+            }
+
+            var newUtc = dto.Fecha.Kind == DateTimeKind.Utc ? dto.Fecha : dto.Fecha.ToUniversalTime();
+            var newLocal = newUtc.ToLocalTime();
+            int duration = dto.DuracionMinutos ?? cita.DuracionMinutos;
+
+            await _unitOfWork.BeginTransactionAsync();
+            try
+            {
+                await ValidateTherapistAvailability(cita.TerapeutaId, newLocal, newUtc, duration, id);
+                await ValidatePatientRules(cita.PacienteId, cita.TerapeutaId, newUtc, duration, id);
+
+                cita.Fecha = DateTime.SpecifyKind(newLocal, DateTimeKind.Unspecified);
+                cita.DuracionMinutos = duration;
+
+                await _unitOfWork.Citas.UpdateAsync(cita);
+                await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.CommitTransactionAsync();
+
+                return _mapper.Map<CitaDto>(cita);
+            }
+            catch
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                throw;
+            }
+        }
+
+        public async Task<bool> CancelAsync(int id)
+        {
+            var cita = await _unitOfWork.Citas.GetByIdAsync(id);
+            if (cita == null) throw new NotFoundException("Cita", id);
+
+            if ((cita.Fecha - DateTime.Now).TotalHours < 12)
+                throw new BusinessRuleException("CannotCancel", "Anulaciones requieren 12 horas de anticipación.");
+
+            cita.Estado = "Cancelled";
+            await _unitOfWork.Citas.UpdateAsync(cita);
+            await _unitOfWork.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> DeleteAsync(int id)
+        {
+            var cita = await _unitOfWork.Citas.GetByIdAsync(id);
+            if (cita == null) throw new NotFoundException("Cita", id);
+            var result = await _unitOfWork.Citas.DeleteAsync(id);
+            await _unitOfWork.SaveChangesAsync();
+            return result;
+        }
+
+        #endregion
+
+        #region Private Helpers
+
+        private IEnumerable<Cita> FilterCitasBySearch(IEnumerable<Cita> citas, string search)
+        {
+            var s = search.ToLower().Trim();
+            return citas.Where(c =>
+                (c.Paciente != null && (c.Paciente.Nombres + " " + c.Paciente.Apellidos).ToLower().Contains(s)) ||
+                (c.Terapeuta != null && (c.Terapeuta.Nombres + " " + c.Terapeuta.Apellidos).ToLower().Contains(s)) ||
+                (c.TipoSesion != null && c.TipoSesion.Nombre != null && c.TipoSesion.Nombre.ToLower().Contains(s)) ||
+                (c.Estado != null && c.Estado.ToLower().Contains(s)) ||
+                (!string.IsNullOrEmpty(c.Motivo) && c.Motivo.ToLower().Contains(s))
+            ).ToList();
+        }
+
+        private async Task<int> GetDuration(int? dtoDuration, int? tipoSesionId)
+        {
+            if (dtoDuration.HasValue && dtoDuration > 0) return dtoDuration.Value;
+            if (tipoSesionId.HasValue)
+            {
+                var tipo = await _unitOfWork.TiposSesion.GetByIdAsync(tipoSesionId.Value);
+                if (tipo != null) return tipo.DuracionMinutos;
+            }
+            return 45;
+        }
+
+        private async Task ValidateTherapistAvailability(int? terapeutaId, DateTime localDate, DateTime utcDate, int duration, int? excludeId = null)
+        {
+            if (!terapeutaId.HasValue) return;
+            var franjas = await _unitOfWork.Franjas.GetByTerapeutaIdAsync(terapeutaId.Value);
+            var timeStart = localDate.TimeOfDay;
+            var timeEnd = timeStart.Add(TimeSpan.FromMinutes(duration));
+
+            bool isInsideFranja = false;
+            foreach (var f in franjas)
+            {
+                bool applicable = (f.Recurrente && f.DiaSemana == (int)localDate.DayOfWeek) ||
+                                  (!f.Recurrente && f.Fecha?.Date == localDate.Date);
+                if (applicable && timeStart >= f.HoraInicio && timeEnd <= f.HoraFin)
                 {
-                    // compare weekday/date using local representation
-                    var isApplicable = (f.Recurrente && f.DiaSemana.HasValue && f.DiaSemana.Value == (int)dtoLocal.DayOfWeek)
-                        || (!f.Recurrente && f.Fecha.HasValue && f.Fecha.Value.Date == dtoLocal.Date);
-                    if (!isApplicable) continue;
-                    var hasException = await _unitOfWork.Excepciones.ExistsAsync(f.Id, dtoLocal.Date);
-                    if (hasException) continue;
-                    if (appointmentTime >= f.HoraInicio && appointmentEndTime <= f.HoraFin)
+                    if (!await _unitOfWork.Excepciones.ExistsAsync(f.Id, localDate.Date))
                     {
-                        covers = true;
+                        isInsideFranja = true;
                         break;
                     }
                 }
-
-            if (!covers)
-            {
-                throw new BusinessRuleException("NoAvailability", "No existe una franja disponible del terapeuta en la fecha/hora solicitada.");
             }
+            if (!isInsideFranja) throw new BusinessRuleException("NoAvailability", "Fuera del horario del terapeuta.");
 
-            // check overlaps for therapist (no buffer; therapists may have back-to-back appointments)
-                // use UTC window for DB queries (DB stores UTC timestamps)
-                var windowStart = dtoUtc.AddMinutes(-duration);
-                var windowEnd = dtoUtc.AddMinutes(duration);
-                var potential = await _unitOfWork.Citas.GetByDateRangeAsync(windowStart, windowEnd);
-                var newStart = dtoUtc;
-                var newEnd = dtoUtc.AddMinutes(duration);
-            var overlaps = potential.Where(a => a.TerapeutaId == dto.TerapeutaId && a.Estado != "Cancelled")
-                .Any(a =>
-                {
-                    var existingStart = a.Fecha;
-                    var existingStartUtc = existingStart.Kind == DateTimeKind.Utc ? existingStart : DateTime.SpecifyKind(existingStart, DateTimeKind.Local).ToUniversalTime();
-                    var existingDuration = a.DuracionMinutos > 0 ? a.DuracionMinutos : duration;
-                    var existingEndUtc = existingStartUtc.AddMinutes(existingDuration);
-                    // therapists allowed back-to-back: use standard interval intersection on UTC times
-                    return existingStartUtc < newEnd && existingEndUtc > newStart;
-                });
-
-            if (overlaps)
-            {
-                throw new BusinessRuleException("ConflictoHorario", "El terapeuta tiene otra cita muy cercana o solapada en ese horario.");
-            }
+            var potential = await _unitOfWork.Citas.GetByDateRangeAsync(utcDate.AddMinutes(-duration), utcDate.AddMinutes(duration));
+            var overlap = potential.Any(a => a.TerapeutaId == terapeutaId && a.Id != excludeId && a.Estado != "Cancelled" &&
+                utcDate < a.Fecha.AddMinutes(a.DuracionMinutos) && utcDate.AddMinutes(duration) > a.Fecha);
+            if (overlap) throw new BusinessRuleException("ConflictoHorario", "El terapeuta ya tiene una cita.");
         }
 
-            // Patient-level rules: require at least 30 minutes gap between any of the patient's appointments.
-        if (patientAppointments.Any())
+        private async Task ValidatePatientRules(int pacienteId, int? terapeutaId, DateTime utcDate, int duration, int? excludeId = null)
         {
-            // determine requested specialty (from Terapeuta if provided)
-            int? requestedEspecialidadId = null;
-            if (dto.TerapeutaId.HasValue)
-            {
-                var t = await _unitOfWork.Terapeutas.GetByIdAsync(dto.TerapeutaId.Value);
-                requestedEspecialidadId = t?.EspecialidadId;
-            }
+            var dayStart = utcDate.Date;
+            var dayEnd = dayStart.AddDays(1).AddTicks(-1);
+            var todayCitas = (await _unitOfWork.Citas.GetByDateRangeAsync(dayStart, dayEnd))
+                                .Where(a => a.PacienteId == pacienteId && a.Id != excludeId && a.Estado != "Cancelled").ToList();
 
-            // check same-day same-specialty: patient cannot book two appointments
-            // with the same speciality on the same date
-            if (requestedEspecialidadId.HasValue)
-            {
-                foreach (var pA in patientAppointments.Where(a => a.TerapeutaId.HasValue))
-                {
-                    var existingTer = await _unitOfWork.Terapeutas.GetByIdAsync(pA.TerapeutaId!.Value);
-                    if (existingTer != null && existingTer.EspecialidadId == requestedEspecialidadId.Value)
-                    {
-                        throw new BusinessRuleException("OnePerSpecialityPerDay", "Ya existe una cita para la misma especialidad en esa fecha.");
-                    }
-                }
-            }
-
-                // check 30-minute gap between patient's appointments (use UTC for DB-stored times)
-                foreach (var pA in patientAppointments.Where(a => a.Estado != "Cancelled"))
-                {
-                    var existingStart = pA.Fecha;
-                    var existingStartUtc = existingStart.Kind == DateTimeKind.Utc ? existingStart : DateTime.SpecifyKind(existingStart, DateTimeKind.Local).ToUniversalTime();
-                    var existingDuration = pA.DuracionMinutos > 0 ? pA.DuracionMinutos : duration;
-                    var existingEndUtc = existingStartUtc.AddMinutes(existingDuration);
-                    var newStartUtc = dtoUtc;
-                    var newEndUtc = dtoUtc.AddMinutes(duration);
-                    var gapOk = existingEndUtc.AddMinutes(30) <= newStartUtc || newEndUtc.AddMinutes(30) <= existingStartUtc;
-                    if (!gapOk)
-                    {
-                        throw new BusinessRuleException("MinGap", "Debe haber al menos 30 minutos entre el fin de una cita y el inicio de la siguiente.");
-                    }
-                }
-        }
-
-            var Cita = _mapper.Map<Cita>(dto);
-            // Store the wall-clock local time (preserve the hour the user selected).
-            // Use dtoLocal (computed above) and persist as Unspecified so the DB keeps the same numeric hour.
-            Cita.Fecha = DateTime.SpecifyKind(dtoLocal, DateTimeKind.Unspecified);
-            Cita.DuracionMinutos = duration;
-
-        // Start transaction to make creation atomic and avoid race conditions
-        await _unitOfWork.BeginTransactionAsync();
-        try
-        {
-                // re-check overlaps right before saving (to avoid race conditions)
-            if (dto.TerapeutaId.HasValue)
-            {
-                var windowStart = dtoUtc.AddMinutes(-duration);
-                var windowEnd = dtoUtc.AddMinutes(duration);
-                var potential = await _unitOfWork.Citas.GetByDateRangeAsync(windowStart, windowEnd);
-                var newStart = dtoUtc;
-                var newEnd = dtoUtc.AddMinutes(duration);
-                var overlapsNow = potential.Where(a => a.TerapeutaId == dto.TerapeutaId && a.Estado != "Cancelled")
-                    .Any(a =>
-                    {
-                        var existingStart = a.Fecha;
-                        var existingStartUtc = existingStart.Kind == DateTimeKind.Utc ? existingStart : DateTime.SpecifyKind(existingStart, DateTimeKind.Local).ToUniversalTime();
-                        var existingDuration = a.DuracionMinutos > 0 ? a.DuracionMinutos : duration;
-                        var existingEndUtc = existingStartUtc.AddMinutes(existingDuration);
-                        return existingStartUtc < newEnd && existingEndUtc > newStart;
-                    });
-                if (overlapsNow)
-                {
-                    await _unitOfWork.RollbackTransactionAsync();
-                    throw new BusinessRuleException("ConflictoHorario", "El terapeuta tiene otra cita muy cercana o solapada en ese horario.");
-                }
-            }
-
-                // re-check patient gaps (use UTC for DB ranges)
-                dayStartCheck = dtoUtc.Date;
-                dayEndCheck = dtoUtc.Date.AddDays(1).AddTicks(-1);
-                var patientAppointmentsNow = (await _unitOfWork.Citas.GetByDateRangeAsync(dayStartCheck, dayEndCheck)).Where(a => a.PacienteId == dto.PacienteId).ToList();
-            if (patientAppointmentsNow.Any())
-            {
-                // enforce same-specialty-per-day: patient cannot book two appointments
-                // with the same speciality on the same date
-                int? requestedEspecialidadId = null;
-                if (dto.TerapeutaId.HasValue)
-                {
-                    var t = await _unitOfWork.Terapeutas.GetByIdAsync(dto.TerapeutaId.Value);
-                    requestedEspecialidadId = t?.EspecialidadId;
-                }
-                if (requestedEspecialidadId.HasValue)
-                {
-                    foreach (var pA in patientAppointmentsNow.Where(a => a.TerapeutaId.HasValue))
-                    {
-                        var existingTer = await _unitOfWork.Terapeutas.GetByIdAsync(pA.TerapeutaId!.Value);
-                        if (existingTer != null && existingTer.EspecialidadId == requestedEspecialidadId.Value)
-                        {
-                            await _unitOfWork.RollbackTransactionAsync();
-                            throw new BusinessRuleException("OnePerSpecialityPerDay", "Ya existe una cita para la misma especialidad en esa fecha.");
-                        }
-                    }
-                }
-                    foreach (var pA in patientAppointmentsNow.Where(a => a.Estado != "Cancelled"))
-                    {
-                        var existingStart = pA.Fecha;
-                        var existingStartUtc = existingStart.Kind == DateTimeKind.Utc ? existingStart : DateTime.SpecifyKind(existingStart, DateTimeKind.Local).ToUniversalTime();
-                        var existingDuration = pA.DuracionMinutos > 0 ? pA.DuracionMinutos : duration;
-                        var existingEndUtc = existingStartUtc.AddMinutes(existingDuration);
-                        var newStartUtc = dtoUtc;
-                        var newEndUtc = dtoUtc.AddMinutes(duration);
-                        var gapOk = existingEndUtc.AddMinutes(30) <= newStartUtc || newEndUtc.AddMinutes(30) <= existingStartUtc;
-                        if (!gapOk)
-                        {
-                            await _unitOfWork.RollbackTransactionAsync();
-                            throw new BusinessRuleException("MinGap", "Debe haber al menos 30 minutos entre el fin de una cita y el inicio de la siguiente.");
-                        }
-                    }
-            }
-
-            var createdAppointment = await _unitOfWork.Citas.CreateAsync(Cita);
-            await _unitOfWork.SaveChangesAsync();
-            await _unitOfWork.CommitTransactionAsync();
-
-            var appointmentWithDetails = await _unitOfWork.Citas.GetWithPacienteAndFamiliaAsync(createdAppointment.Id);
-            _logger.LogInformation("Cita for Paciente ID {PacienteID} created successfully with ID {Id}.", dto.PacienteId, createdAppointment.Id);
-            return _mapper.Map<CitaDto>(appointmentWithDetails!);
-        }
-        catch
-        {
-            try { await _unitOfWork.RollbackTransactionAsync(); } catch {}
-            throw;
-        }
-    }
-
-    public async Task<CitaDto> UpdateAsync(int id, UpdateCitaDto dto)
-    {
-        var Cita = await _unitOfWork.Citas.GetWithPacienteAndFamiliaAsync(id);
-        if (Cita == null)
-        {
-            throw new NotFoundException("Cita", id);
-        }
-
-        // Solo validar fecha si se está reprogramando (no al cambiar estado)
-        if (dto.Fecha != default(DateTime) && dto.Fecha != Cita.Fecha) {
-            var hoursUntil = (Cita.Fecha - DateTime.Now).TotalHours;
-            if (hoursUntil < 12) {
-                throw new BusinessRuleException(
-                    "RescheduleNotAllowed",
-                    "No se puede anular o reprogramar citas con menos de 12 horas de anticipacion, Comunicarse via telefonica.");
-            }
-            if (dto.Fecha <= DateTime.Now) {
-                throw new BusinessRuleException(
-                    "PastAppointment",
-                    "Cannot reschedule to a past date.");
-            }
-        }
-
-        // Determine new duration if provided
-        int duration = Cita.DuracionMinutos > 0 ? Cita.DuracionMinutos : 45;
-
-        // If therapist changed or date changed, validate availability and overlaps
-        // Solo validar disponibilidad si se está cambiando terapeuta o fecha
-        // Si solo se cambia estado, no validar disponibilidad ni solapamiento
-
-        var validStatuses = new[] { "Scheduled", "Completed", "Completada", "Cancelled", "NoAsistio" };
-        if (!validStatuses.Contains(dto.Estado))
-        {
-            throw new BusinessRuleException(
-                "InvalidStatus",
-                $"Status must be one of: {string.Join(", ", validStatuses)}");
-        }
-
-        // Validar transición de estado
-        if (dto.Estado == "Completed" || dto.Estado == "Completada")
-        {
-            if (Cita.Estado != "Scheduled" && Cita.Estado != "Programada")
-                throw new BusinessRuleException("TransicionInvalida", "Solo se puede completar una cita programada.");
-            if (DateTime.Now < Cita.Fecha)
-                throw new BusinessRuleException("FechaInvalida", "No se puede completar una cita futura.");
-            // Guardar el estado en español si así lo envía el frontend
-            Cita.Estado = dto.Estado == "Completada" ? "Completada" : "Completed";
-            if (!string.IsNullOrWhiteSpace(dto.Notas))
-                Cita.Notas = dto.Notas;
-        }
-        else if (dto.Estado == "NoAsistio")
-        {
-            if (Cita.Estado != "Scheduled" && Cita.Estado != "Programada")
-                throw new BusinessRuleException("TransicionInvalida", "Solo se puede marcar como no asistida una cita programada.");
-            if (DateTime.Now < Cita.Fecha)
-                throw new BusinessRuleException("FechaInvalida", "No se puede marcar como no asistida una cita futura.");
-            Cita.Estado = "NoAsistio";
-            if (!string.IsNullOrWhiteSpace(dto.Notas))
-                Cita.Notas = dto.Notas;
-        }
-        else
-        {
-            // Para otros cambios, usar el mapeo normal solo si se envían los campos
-            if (dto.Fecha != default(DateTime)) Cita.Fecha = dto.Fecha;
-            if (!string.IsNullOrWhiteSpace(dto.Motivo)) Cita.Motivo = dto.Motivo;
-            if (dto.TerapeutaId.HasValue) Cita.TerapeutaId = dto.TerapeutaId;
-            if (dto.TipoSesionId.HasValue) Cita.TipoSesionId = dto.TipoSesionId;
-            if (dto.DuracionMinutos.HasValue) Cita.DuracionMinutos = dto.DuracionMinutos.Value;
-        }
-
-        var updatedAppointment = await _unitOfWork.Citas.UpdateAsync(Cita);
-        await _unitOfWork.SaveChangesAsync();
-
-        return _mapper.Map<CitaDto>(updatedAppointment);
-    }
-
-    public async Task<bool> DeleteAsync(int id)
-    {
-        _logger.LogInformation("Attempting to delete Cita with ID {AppointmentID}.", id);
-        var Cita = await _unitOfWork.Citas.GetByIdAsync(id);
-        if (Cita == null)
-        {
-            _logger.LogWarning("Cita with ID {AppointmentID} not found. Cannot delete.", id);
-            throw new NotFoundException("Cita", id);
-        }
-
-        var result = await _unitOfWork.Citas.DeleteAsync(id);
-        await _unitOfWork.SaveChangesAsync();
-        _logger.LogInformation("Cita with ID {AppointmentID} deleted successfully.", id);
-        return result;
-    }
-
-    public async Task<bool> CancelAsync(int id)
-    {
-        var Cita = await _unitOfWork.Citas.GetByIdAsync(id);
-        if (Cita == null)
-        {
-            throw new NotFoundException("Cita", id);
-        }
-
-        // enforce 12-hour restriction
-        var hoursUntil = (Cita.Fecha - DateTime.Now).TotalHours;
-        if (hoursUntil < 12)
-        {
-            throw new BusinessRuleException(
-                "CannotCancelOrReschedule",
-                "No se puede anular o reprogramar citas con menos de 12 horas de anticipacion, Comunicarse via telefonica.");
-        }
-
-        if (!Cita.CanBeCancelada())
-        {
-            throw new BusinessRuleException(
-                "CannotCancel",
-                "Only future scheduled Citas can be cancelled.");
-        }
-
-        Cita.Estado = "Cancelled";
-
-        await _unitOfWork.Citas.UpdateAsync(Cita);
-        await _unitOfWork.SaveChangesAsync();
-
-        return true;
-    }
-
-    public async Task<IEnumerable<CitaDto>> GetByPacienteIdAsync(int pacienteId)
-    {
-        var Citas = await _unitOfWork.Citas.GetByPacienteIdAsync(pacienteId);
-        return _mapper.Map<IEnumerable<CitaDto>>(Citas);
-    }
-
-    public async Task<IEnumerable<CitaDto>> GetByDateRangeAsync(DateTime startDate, DateTime endDate)
-    {
-        if (startDate > endDate)
-        {
-            throw new BusinessRuleException(
-                "InvalidDateRange",
-                "Start date must be before end date.");
-        }
-
-        var Citas = await _unitOfWork.Citas.GetByDateRangeAsync(startDate, endDate);
-        return _mapper.Map<IEnumerable<CitaDto>>(Citas);
-    }
-
-    public async Task<IEnumerable<CitaDto>> GetByStatusAsync(string status)
-    {
-        var validStatuses = new[] { "Scheduled", "Completed", "Cancelled" };
-        if (!validStatuses.Contains(status))
-        {
-            throw new BusinessRuleException(
-                "InvalidStatus",
-                $"Status must be one of: {string.Join(", ", validStatuses)}");
-        }
-
-        var Citas = await _unitOfWork.Citas.GetByStatusAsync(status);
-        return _mapper.Map<IEnumerable<CitaDto>>(Citas);
-    }
-
-    public async Task<IEnumerable<CitaAlertaDto>> GetByTerapeutaAndDateRangeAsync(int terapeutaId, DateTime startDate, DateTime endDate)
-    {
-        if (startDate > endDate)
-        {
-            throw new BusinessRuleException(
-                "InvalidDateRange",
-                "Start date must be before end date.");
-        }
-
-        var citas = await _unitOfWork.Citas.GetByTerapeutaAndDateRangeAsync(terapeutaId, startDate, endDate);
-        return _mapper.Map<IEnumerable<CitaAlertaDto>>(citas);
-    }
-
-    public async Task<CitaDto> ReprogramAsync(int id, DTOs.Cita.ReprogramCitaDto dto)
-    {
-        var Cita = await _unitOfWork.Citas.GetWithPacienteAndFamiliaAsync(id);
-        if (Cita == null)
-        {
-            throw new NotFoundException("Cita", id);
-        }
-
-        // enforce 12-hour restriction from current scheduled time
-        var hoursUntil = (Cita.Fecha - DateTime.Now).TotalHours;
-        if (hoursUntil < 12)
-        {
-            throw new BusinessRuleException(
-                "RescheduleNotAllowed",
-                "No se puede anular o reprogramar citas con menos de 12 horas de anticipacion, Comunicarse via telefonica.");
-        }
-
-        // normalize incoming date
-        var newUtc = dto.Fecha.Kind == DateTimeKind.Utc ? dto.Fecha : dto.Fecha.ToUniversalTime();
-        var newLocal = newUtc.ToLocalTime();
-
-        if (newLocal <= DateTime.Now)
-        {
-            throw new BusinessRuleException(
-                "PastAppointment",
-                "Cannot reschedule to a past date.");
-        }
-
-        // determine duration
-        int duration = dto.DuracionMinutos ?? Cita.DuracionMinutos;
-        if (duration <= 0 && dto.DuracionMinutos == null && Cita.TipoSesionId.HasValue)
-        {
-            var tipo = await _unitOfWork.TiposSesion.GetByIdAsync(Cita.TipoSesionId.Value);
-            if (tipo != null) duration = tipo.DuracionMinutos;
-        }
-        if (duration <= 0) duration = Cita.DuracionMinutos > 0 ? Cita.DuracionMinutos : 45;
-
-        var terapeutaId = Cita.TerapeutaId;
-
-        // If therapist assigned, verify franja and overlaps
-        if (terapeutaId.HasValue)
-        {
-            var franjas = await _unitOfWork.Franjas.GetByTerapeutaIdAsync(terapeutaId.Value);
-            var appointmentTime = newLocal.TimeOfDay;
-            var appointmentEndTime = appointmentTime.Add(TimeSpan.FromMinutes(duration));
-
-            var covers = false;
-            foreach (var f in franjas)
-            {
-                var isApplicable = (f.Recurrente && f.DiaSemana.HasValue && f.DiaSemana.Value == (int)newLocal.DayOfWeek)
-                    || (!f.Recurrente && f.Fecha.HasValue && f.Fecha.Value.Date == newLocal.Date);
-                if (!isApplicable) continue;
-                var hasException = await _unitOfWork.Excepciones.ExistsAsync(f.Id, newLocal.Date);
-                if (hasException) continue;
-                if (appointmentTime >= f.HoraInicio && appointmentEndTime <= f.HoraFin)
-                {
-                    covers = true;
-                    break;
-                }
-            }
-
-            if (!covers)
-            {
-                throw new BusinessRuleException("NoAvailability", "No existe una franja disponible del terapeuta en la fecha/hora solicitada.");
-            }
-
-            // check overlaps excluding this appointment — therapists may be back-to-back
-            var windowStart = newUtc.AddMinutes(-duration);
-            var windowEnd = newUtc.AddMinutes(duration);
-            var potential = await _unitOfWork.Citas.GetByDateRangeAsync(windowStart, windowEnd);
-            var overlaps = potential.Where(a => a.TerapeutaId == terapeutaId && a.Id != Cita.Id && a.Estado != "Cancelled")
-                .Any(a =>
-                {
-                    var existingStart = a.Fecha;
-                    var existingStartUtc = existingStart.Kind == DateTimeKind.Utc ? existingStart : DateTime.SpecifyKind(existingStart, DateTimeKind.Local).ToUniversalTime();
-                    var existingDuration = a.DuracionMinutos > 0 ? a.DuracionMinutos : duration;
-                    var existingEndUtc = existingStartUtc.AddMinutes(existingDuration);
-                    var newStart = newUtc;
-                    var newEnd = newUtc.AddMinutes(duration);
-                    return existingStartUtc < newEnd && existingEndUtc > newStart;
-                });
-
-            if (overlaps)
-            {
-                throw new BusinessRuleException("ConflictoHorario", "El terapeuta tiene otra cita muy cercana o solapada en ese horario.");
-            }
-        }
-
-        // Patient-level rules: same-speciality per day and 30-minute gap
-        var dayStartCheck = newUtc.Date;
-        var dayEndCheck = newUtc.Date.AddDays(1).AddTicks(-1);
-        var patientAppointments = (await _unitOfWork.Citas.GetByDateRangeAsync(dayStartCheck, dayEndCheck)).Where(a => a.PacienteId == Cita.PacienteId && a.Id != Cita.Id).ToList();
-
-        if (patientAppointments.Any())
-        {
-            int? requestedEspecialidadId = null;
             if (terapeutaId.HasValue)
             {
                 var t = await _unitOfWork.Terapeutas.GetByIdAsync(terapeutaId.Value);
-                requestedEspecialidadId = t?.EspecialidadId;
-            }
-
-            if (requestedEspecialidadId.HasValue)
-            {
-                foreach (var pA in patientAppointments.Where(a => a.TerapeutaId.HasValue))
+                if (t != null)
                 {
-                    var existingTer = await _unitOfWork.Terapeutas.GetByIdAsync(pA.TerapeutaId!.Value);
-                    if (existingTer != null && existingTer.EspecialidadId == requestedEspecialidadId.Value)
+                    foreach (var c in todayCitas)
                     {
-                        throw new BusinessRuleException("OnePerSpecialityPerDay", "Ya existe una cita para la misma especialidad en esa fecha.");
-                    }
-                }
-            }
-
-            foreach (var pA in patientAppointments.Where(a => a.Estado != "Cancelled"))
-            {
-                var existingStart = pA.Fecha;
-                var existingStartUtc = existingStart.Kind == DateTimeKind.Utc ? existingStart : DateTime.SpecifyKind(existingStart, DateTimeKind.Local).ToUniversalTime();
-                var existingDuration = pA.DuracionMinutos > 0 ? pA.DuracionMinutos : duration;
-                var existingEndUtc = existingStartUtc.AddMinutes(existingDuration);
-                var newStartUtc = newUtc;
-                var newEndUtc = newUtc.AddMinutes(duration);
-                var gapOk = existingEndUtc.AddMinutes(30) <= newStartUtc || newEndUtc.AddMinutes(30) <= existingStartUtc;
-                if (!gapOk)
-                {
-                    throw new BusinessRuleException("MinGap", "Debe haber al menos 30 minutos entre el fin de una cita y el inicio de la siguiente.");
-                }
-            }
-        }
-
-        // persist changes inside a transaction and re-check to avoid races
-        await _unitOfWork.BeginTransactionAsync();
-        try
-        {
-            // re-check therapist overlaps
-            if (terapeutaId.HasValue)
-            {
-                var windowStart = newUtc.AddMinutes(-duration);
-                var windowEnd = newUtc.AddMinutes(duration);
-                var potentialNow = await _unitOfWork.Citas.GetByDateRangeAsync(windowStart, windowEnd);
-                var overlapsNow = potentialNow.Where(a => a.TerapeutaId == terapeutaId && a.Id != Cita.Id && a.Estado != "Cancelled")
-                    .Any(a =>
-                    {
-                        var existingStart = a.Fecha;
-                        var existingStartUtc = existingStart.Kind == DateTimeKind.Utc ? existingStart : DateTime.SpecifyKind(existingStart, DateTimeKind.Local).ToUniversalTime();
-                        var existingDuration = a.DuracionMinutos > 0 ? a.DuracionMinutos : duration;
-                        var existingEndUtc = existingStartUtc.AddMinutes(existingDuration);
-                        var newStart = newUtc;
-                        var newEnd = newUtc.AddMinutes(duration);
-                        return existingStartUtc < newEnd && existingEndUtc > newStart;
-                    });
-                if (overlapsNow)
-                {
-                    await _unitOfWork.RollbackTransactionAsync();
-                    throw new BusinessRuleException("ConflictoHorario", "El terapeuta tiene otra cita muy cercana o solapada en ese horario.");
-                }
-            }
-
-            // re-check patient gaps for the day
-            dayStartCheck = newUtc.Date;
-            dayEndCheck = newUtc.Date.AddDays(1).AddTicks(-1);
-            var patientAppointmentsNow = (await _unitOfWork.Citas.GetByDateRangeAsync(dayStartCheck, dayEndCheck)).Where(a => a.PacienteId == Cita.PacienteId && a.Id != Cita.Id).ToList();
-            if (patientAppointmentsNow.Any())
-            {
-                int? requestedEspecialidadId = null;
-                if (terapeutaId.HasValue)
-                {
-                    var t = await _unitOfWork.Terapeutas.GetByIdAsync(terapeutaId.Value);
-                    requestedEspecialidadId = t?.EspecialidadId;
-                }
-                if (requestedEspecialidadId.HasValue)
-                {
-                    foreach (var pA in patientAppointmentsNow.Where(a => a.TerapeutaId.HasValue))
-                    {
-                        var existingTer = await _unitOfWork.Terapeutas.GetByIdAsync(pA.TerapeutaId!.Value);
-                        if (existingTer != null && existingTer.EspecialidadId == requestedEspecialidadId.Value)
+                        if (!c.TerapeutaId.HasValue) continue;
+                        var existingT = await _unitOfWork.Terapeutas.GetByIdAsync(c.TerapeutaId.Value);
+                        if (existingT != null && existingT.EspecialidadId == t.EspecialidadId)
                         {
-                            await _unitOfWork.RollbackTransactionAsync();
-                            throw new BusinessRuleException("OnePerSpecialityPerDay", "Ya existe una cita para la misma especialidad en esa fecha.");
+                            throw new BusinessRuleException("OnePerSpecialityPerDay", "Ya tiene cita de esta especialidad hoy.");
                         }
                     }
                 }
-                foreach (var pA in patientAppointmentsNow.Where(a => a.Estado != "Cancelled"))
-                {
-                    var existingStart = pA.Fecha;
-                    var existingStartUtc = existingStart.Kind == DateTimeKind.Utc ? existingStart : DateTime.SpecifyKind(existingStart, DateTimeKind.Local).ToUniversalTime();
-                    var existingDuration = pA.DuracionMinutos > 0 ? pA.DuracionMinutos : duration;
-                    var existingEndUtc = existingStartUtc.AddMinutes(existingDuration);
-                    var newStartUtc = newUtc;
-                    var newEndUtc = newUtc.AddMinutes(duration);
-                    var gapOk = existingEndUtc.AddMinutes(30) <= newStartUtc || newEndUtc.AddMinutes(30) <= existingStartUtc;
-                    if (!gapOk)
-                    {
-                        await _unitOfWork.RollbackTransactionAsync();
-                        throw new BusinessRuleException("MinGap", "Debe haber al menos 30 minutos entre el fin de una cita y el inicio de la siguiente.");
-                    }
-                }
             }
 
-            // apply changes
-            Cita.Fecha = DateTime.SpecifyKind(newLocal, DateTimeKind.Unspecified);
-            Cita.DuracionMinutos = duration;
-
-            var updated = await _unitOfWork.Citas.UpdateAsync(Cita);
-            await _unitOfWork.SaveChangesAsync();
-            await _unitOfWork.CommitTransactionAsync();
-
-            var appointmentWithDetails = await _unitOfWork.Citas.GetWithPacienteAndFamiliaAsync(updated.Id);
-            return _mapper.Map<CitaDto>(appointmentWithDetails!);
+            foreach (var c in todayCitas)
+            {
+                var cEnd = c.Fecha.AddMinutes(c.DuracionMinutos);
+                var newEnd = utcDate.AddMinutes(duration);
+                if (!(cEnd.AddMinutes(30) <= utcDate || newEnd.AddMinutes(30) <= c.Fecha))
+                    throw new BusinessRuleException("MinGap", "Debe haber 30 min entre citas.");
+            }
         }
-        catch
-        {
-            try { await _unitOfWork.RollbackTransactionAsync(); } catch { }
-            throw;
-        }
+
+        #endregion
     }
 }
+
 

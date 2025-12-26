@@ -3,12 +3,18 @@ using CentroTerapia.Domain.Entities;
 using CentroTerapia.Domain.Ports.Out;
 using CentroTerapia.Infrastructure.Persistence.Context;
 
+
 namespace CentroTerapia.Infrastructure.Persistence.Repositories
 {
     public class FamiliaRepository : Repository<Familia>, IFamiliaRepository
     {
         public FamiliaRepository(ApplicationDbContext context) : base(context)
         {
+        }
+
+        public new async Task<IEnumerable<Familia>> GetAllAsync()
+        {
+            return await _dbSet.Include(f => f.Pacientes).ToListAsync();
         }
 
         public async Task<Familia?> GetWithPacientesAsync(int id)

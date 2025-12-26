@@ -1,0 +1,35 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "build-dotnet",
+			"type": "shell",
+			"command": "dotnet build",
+			"problemMatcher": [
+				"$msCompile"
+			],
+			"group": "build"
+		},
+		{
+			"label": "run-dotnet-api",
+			"type": "shell",
+			"command": "dotnet run --project src/CentroTerapia.API/CentroTerapia.API.csproj",
+			"group": "test"
+		},
+		{
+			"label": "build-dotnet",
+			"type": "shell",
+			"command": "dotnet build",
+			"problemMatcher": [
+				"$msCompile"
+			],
+			"group": "build"
+		},
+		{
+			"label": "run-dotnet-api",
+			"type": "shell",
+			"command": "dotnet run --project src/CentroTerapia.API/CentroTerapia.API.csproj",
+			"group": "test"
+		}
+	]
+}

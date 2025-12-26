@@ -41,6 +41,7 @@ namespace CentroTerapia.API.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin,Terapeuta")]
         public async Task<ActionResult<TipoSesionDto>> Create([FromBody] CreateTipoSesionDto dto)
         {
             var created = await _service.CreateAsync(dto);
@@ -48,6 +49,7 @@ namespace CentroTerapia.API.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin,Terapeuta")]
         public async Task<ActionResult<TipoSesionDto>> Update(int id, [FromBody] UpdateTipoSesionDto dto)
         {
             try
@@ -62,6 +64,7 @@ namespace CentroTerapia.API.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin,Terapeuta")]
         public async Task<ActionResult> Delete(int id)
         {
             try

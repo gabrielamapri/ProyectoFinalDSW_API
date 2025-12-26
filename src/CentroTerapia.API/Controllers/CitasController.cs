@@ -4,17 +4,85 @@ using CentroTerapia.Application.Interfaces;
 using CentroTerapia.Application.DTOs.Cita;
 using CentroTerapia.Domain.Exceptions;
 using AutoMapper;
+using System.Security.Claims;
 
 namespace CentroTerapia.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize] 
     public class CitasController : ControllerBase
     {
         private readonly ICitaService _appointmentService;
         private readonly IMapper _mapper;
+        private readonly IFamiliaService _familiaService;
 
+        public CitasController(ICitaService appointmentService, IMapper mapper, IFamiliaService familiaService)
+        {
+            _appointmentService = appointmentService;
+            _mapper = mapper;
+            _familiaService = familiaService;
+        }
 
+        // --- ENDPOINTS PARA FAMILIAS (PADRES) ---
+
+        [Authorize(Roles = "Padre")]
+        [HttpGet("mis-citas")]
+        public async Task<ActionResult<IEnumerable<CitaDto>>> GetCitasDeMisHijos([FromQuery] string? search = null)
+        {
+            // 1. Intentar sacar el ID de la Familia del Token
+            var familiaIdClaim = User.FindFirst("FamiliaId")?.Value ?? User.FindFirst("familiaId")?.Value;
+            int familiaId = 0;
+            
+            if (!string.IsNullOrEmpty(familiaIdClaim))
+                int.TryParse(familiaIdClaim, out familiaId);
+
+            List<int> pacienteIds = new List<int>();
+
+            // 2. Si tenemos el ID, buscamos los pacientes de esa familia
+            if (familiaId > 0)
+            {
+                var familia = await _familiaService.GetByIdAsync(familiaId);
+                if (familia != null)
+                {
+                    pacienteIds = familia.Pacientes?.Select(p => p.Id).ToList() ?? new List<int>();
+                }
+            }
+            else
+            {
+                // Respaldo por Email si el FamiliaId no está en el token
+                var email = User.FindFirst(ClaimTypes.Email)?.Value;
+                if (!string.IsNullOrEmpty(email))
+                {
+                    var familias = await _familiaService.GetAllAsync(email, "Padre");
+                    var familia = familias.FirstOrDefault();
+                    if (familia != null)
+                    {
+                        pacienteIds = familia.Pacientes?.Select(p => p.Id).ToList() ?? new List<int>();
+                    }
+                }
+            }
+
+            if (pacienteIds.Count == 0)
+                return Ok(new List<CitaDto>());
+
+            // LLAMADA CORREGIDA: Se pasan los IDs de pacientes y el término de búsqueda
+            var citas = await _appointmentService.GetByPacienteIdsAsync(pacienteIds, search);
+            
+            return Ok(citas);
+        }
+
+        // --- ENDPOINTS PARA ADMINISTRACIÓN / TERAPEUTAS ---
+
+        [Authorize(Roles = "Admin,Terapeuta")]
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<CitaDto>>> GetAll([FromQuery] string? search = null)
+        {
+            var citas = await _appointmentService.GetAllAsync(search);
+            return Ok(citas);
+        }
+
+        [Authorize(Roles = "Admin,Terapeuta")]
         [HttpGet("terapeuta/{terapeutaId}")]
         public async Task<ActionResult<IEnumerable<CitaDto>>> GetByTerapeutaId(int terapeutaId)
         {
@@ -22,127 +90,34 @@ namespace CentroTerapia.API.Controllers
             return Ok(citas);
         }
 
-        public CitasController(ICitaService appointmentService, IMapper mapper)
-        {
-            _appointmentService = appointmentService;
-            _mapper = mapper;
-        }
+        // --- ENDPOINTS COMPARTIDOS CON SEGURIDAD ---
 
-        [AllowAnonymous]
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<CitaDto>>> GetAll([FromQuery] string? search = null)
-        {
-            var Citas = await _appointmentService.GetAllAsync(search);
-            var citas = _mapper.Map<IEnumerable<CitaDto>>(Citas);
-            return Ok(citas);
-        }
-
-        [AllowAnonymous]
         [HttpGet("{id}")]
         public async Task<ActionResult<CitaDto>> GetById(int id)
         {
-            var Cita = await _appointmentService.GetByIdAsync(id);
-            var cita = _mapper.Map<CitaDto>(Cita);
+            var cita = await _appointmentService.GetByIdAsync(id);
+            if (cita == null) return NotFound();
+            
             return Ok(cita);
         }
 
-        [AllowAnonymous]
-        [HttpGet("paciente/{pacienteId}")]
-        public async Task<ActionResult<IEnumerable<CitaDto>>> GetByPacienteId(int pacienteId)
-        {
-            try
-            {
-                var Citas = await _appointmentService.GetByPacienteIdAsync(pacienteId);
-                var citas = _mapper.Map<IEnumerable<CitaDto>>(Citas);
-                return Ok(citas);
-            }
-            catch (NotFoundException ex)
-            {
-                return NotFound(new { message = ex.Message });
-            }
-        }
-
-        [AllowAnonymous]
+        [Authorize(Roles = "Admin,Terapeuta")]
         [HttpGet("status/{estado}")]
         public async Task<ActionResult<IEnumerable<CitaDto>>> GetByEstado(string estado)
         {
-            try
-            {
-                var Citas = await _appointmentService.GetByStatusAsync(estado);
-                var citas = _mapper.Map<IEnumerable<CitaDto>>(Citas);
-                return Ok(citas);
-            }
-            catch (BusinessRuleException ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            var citas = await _appointmentService.GetByStatusAsync(estado);
+            return Ok(citas);
         }
 
-        [AllowAnonymous]
-        [HttpGet("rango-fechas")]
-        public async Task<ActionResult<IEnumerable<CitaDto>>> GetByFechaRango([FromQuery] DateTime inicio, [FromQuery] DateTime fin)
-        {
-            try
-            {
-                var Citas = await _appointmentService.GetByDateRangeAsync(inicio, fin);
-                var citas = _mapper.Map<IEnumerable<CitaDto>>(Citas);
-                return Ok(citas);
-            }
-            catch (BusinessRuleException ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-        }
-
-        [AllowAnonymous]
-        [HttpGet("terapeuta/{terapeutaId}/rango-fechas")]
-        public async Task<ActionResult<IEnumerable<CitaAlertaDto>>> GetByTerapeutaAndFechaRango(int terapeutaId, [FromQuery] DateTime inicio, [FromQuery] DateTime fin)
-        {
-            try
-            {
-                var citas = await _appointmentService.GetByTerapeutaAndDateRangeAsync(terapeutaId, inicio, fin);
-                return Ok(citas);
-            }
-            catch (BusinessRuleException ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-        }
-
-        [AllowAnonymous]
         [HttpPost]
         public async Task<ActionResult<CitaDto>> Create([FromBody] CreateCitaDto dto)
         {
             try
             {
-            var Cita = await _appointmentService.CreateAsync(_mapper.Map<CreateCitaDto>(dto));
-                var cita = _mapper.Map<CitaDto>(Cita);
-                return CreatedAtAction(nameof(GetById), new { id = cita.Id }, cita);
+                var citaDto = await _appointmentService.CreateAsync(dto);
+                return CreatedAtAction(nameof(GetById), new { id = citaDto.Id }, citaDto);
             }
-            catch (NotFoundException ex)
-            {
-                return NotFound(new { message = ex.Message });
-            }
-            catch (BusinessRuleException ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-        }
-
-        [HttpPut("{id}")]
-        public async Task<ActionResult<CitaDto>> Update(int id, [FromBody] UpdateCitaDto dto)
-        {
-            try
-            {
-                var Cita = await _appointmentService.UpdateAsync(id, _mapper.Map<UpdateCitaDto>(dto));
-                var cita = _mapper.Map<CitaDto>(Cita);
-                return Ok(cita);
-            }
-            catch (NotFoundException ex)
-            {
-                return NotFound(new { message = ex.Message });
-            }
-            catch (BusinessRuleException ex)
+            catch (Exception ex) when (ex is NotFoundException || ex is BusinessRuleException)
             {
                 return BadRequest(new { message = ex.Message });
             }
@@ -151,14 +126,10 @@ namespace CentroTerapia.API.Controllers
         [HttpPatch("{id}/cancelar")]
         public async Task<ActionResult> Cancelar(int id)
         {
-            try
+            try 
             {
                 await _appointmentService.CancelAsync(id);
-                return Ok(new { message = "Cita cancelada" });
-            }
-            catch (NotFoundException ex)
-            {
-                return NotFound(new { message = ex.Message });
+                return Ok(new { message = "Cita cancelada con éxito" });
             }
             catch (BusinessRuleException ex)
             {
@@ -167,35 +138,12 @@ namespace CentroTerapia.API.Controllers
         }
 
         [HttpPatch("{id}/reprogramar")]
-        public async Task<ActionResult<CitaDto>> Reprogramar(int id, [FromBody] CentroTerapia.Application.DTOs.Cita.ReprogramCitaDto dto)
+        public async Task<ActionResult<CitaDto>> Reprogramar(int id, [FromBody] ReprogramCitaDto dto)
         {
             try
             {
-                var Cita = await _appointmentService.ReprogramAsync(id, dto);
-                var cita = _mapper.Map<CitaDto>(Cita);
-                return Ok(cita);
-            }
-            catch (NotFoundException ex)
-            {
-                return NotFound(new { message = ex.Message });
-            }
-            catch (BusinessRuleException ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-        }
-
-        [HttpDelete("{id}")]
-        public async Task<ActionResult> Delete(int id)
-        {
-            try
-            {
-                await _appointmentService.DeleteAsync(id);
-                return NoContent();
-            }
-            catch (NotFoundException ex)
-            {
-                return NotFound(new { message = ex.Message });
+                var citaDto = await _appointmentService.ReprogramAsync(id, dto);
+                return Ok(citaDto);
             }
             catch (BusinessRuleException ex)
             {
@@ -204,5 +152,3 @@ namespace CentroTerapia.API.Controllers
         }
     }
 }
-
-

@@ -51,22 +51,57 @@ namespace CentroTerapia.Application.Services
             return result;
         }
 
-        public async Task<IEnumerable<FamiliaDto>> GetAllAsync()
+
+        public async Task<IEnumerable<FamiliaDto>> GetAllAsync(string? userCorreo = null, string? userRol = null)
         {
             var items = await _unitOfWork.Familias.GetAllAsync();
+            _logger.LogInformation($"[GetAllAsync] userRol: {userRol}, userCorreo: {userCorreo}");
+            // Si es padre, solo mostrar la familia donde el correo coincide
+            if (userRol == "Padre" && !string.IsNullOrEmpty(userCorreo))
+            {
+                var prevCount = items.Count();
+                items = items.Where(f => (f.ResponsablePrincipalEmail ?? "").Trim().ToLower() == userCorreo.Trim().ToLower());
+                _logger.LogInformation($"[GetAllAsync] Familias filtradas: {items.Count()} de {prevCount}");
+            }
             return _mapper.Map<IEnumerable<FamiliaDto>>(items);
         }
 
-        public async Task<(IEnumerable<FamiliaDto> Items, int Total)> GetPagedAsync(int page, int pageSize, string? search)
+        public async Task<(IEnumerable<FamiliaDto> Items, int Total)> GetPagedAsync(int page, int pageSize, string? search, string? userCorreo = null, string? userRol = null)
         {
-            var (items, total) = await _unitOfWork.Familias.GetPagedAsync(page <= 0 ? 1 : page, pageSize <= 0 ? 10 : pageSize, search);
+            var allItems = await _unitOfWork.Familias.GetAllAsync();
+            _logger.LogInformation($"[GetPagedAsync] userRol: {userRol}, userCorreo: {userCorreo}");
+            // Si es padre, solo mostrar la familia donde el correo coincide
+            if (userRol == "Padre" && !string.IsNullOrEmpty(userCorreo))
+            {
+                var prevCount = allItems.Count();
+                allItems = allItems.Where(f => (f.ResponsablePrincipalEmail ?? "").Trim().ToLower() == userCorreo.Trim().ToLower());
+                _logger.LogInformation($"[GetPagedAsync] Familias filtradas: {allItems.Count()} de {prevCount}");
+            }
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var s = search.Trim().ToLower();
+                allItems = allItems.Where(f =>
+                    (f.ResponsablePrincipalNombre ?? string.Empty).ToLower().Contains(s) ||
+                    (f.ResponsablePrincipalApellido ?? string.Empty).ToLower().Contains(s) ||
+                    (f.ResponsablePrincipalDNI ?? string.Empty).ToLower().Contains(s) ||
+                    (f.Responsable2Nombre ?? string.Empty).ToLower().Contains(s) ||
+                    (f.Responsable2Apellido ?? string.Empty).ToLower().Contains(s) ||
+                    (f.Responsable2DNI ?? string.Empty).ToLower().Contains(s)
+                );
+            }
+            var total = allItems.Count();
+            var items = allItems.Skip((page - 1) * pageSize).Take(pageSize).ToList();
             return (_mapper.Map<IEnumerable<FamiliaDto>>(items), total);
         }
 
-        public async Task<FamiliaDto> GetByIdAsync(int id)
+
+        public async Task<FamiliaDto> GetByIdAsync(int id, string? userCorreo = null, string? userRol = null)
         {
             var item = await _unitOfWork.Familias.GetWithPacientesAsync(id);
             if (item == null) throw new NotFoundException("Familia", id);
+            // Si es padre, solo puede ver su propia familia
+            if (userRol == "Padre" && !string.IsNullOrEmpty(userCorreo) && item.ResponsablePrincipalEmail != userCorreo)
+                throw new NotFoundException("Familia", id);
             return _mapper.Map<FamiliaDto>(item);
         }
 

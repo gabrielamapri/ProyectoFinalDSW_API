@@ -8,6 +8,7 @@ namespace CentroTerapia.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize] // Protegemos todo el controlador por defecto
     public class TerapeutasController : ControllerBase
     {
         private readonly ITerapeutaService _service;
@@ -18,19 +19,39 @@ namespace CentroTerapia.API.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<TerapeutaDto>>> GetAll()
+        public async Task<ActionResult<IEnumerable<object>>> GetAll()
         {
             var q = HttpContext.Request.Query;
             int page = int.TryParse(q["page"], out var p) ? p : 1;
             int pageSize = int.TryParse(q["pageSize"], out var ps) ? ps : 20;
             var search = q.ContainsKey("search") ? q["search"].ToString() : null;
+            
             bool? activo = null;
             if (q.ContainsKey("activo") && bool.TryParse(q["activo"], out var a)) activo = a;
 
             int? especialidadId = null;
-            if (q.ContainsKey("especialidadId") && int.TryParse(q["especialidadId"].ToString(), out var eid)) especialidadId = eid;
+            if (q.ContainsKey("especialidadId") && int.TryParse(q["especialidadId"].ToString(), out var eid)) 
+                especialidadId = eid;
+
             var (items, total) = await _service.GetPagedAsync(page, pageSize, search, activo, especialidadId);
+            
+            // Agregamos el total a las cabeceras para la paginación del Front
             Response.Headers.Append("X-Total-Count", total.ToString());
+
+            // --- CORRECCIÓN PARA EL ROL PADRE ---
+            if (User.IsInRole("Padre"))
+            {
+                var informativos = items.Select(t => new {
+                    t.Id, // <--- CRÍTICO: Sin esto el ComboBox no puede seleccionar nada
+                    t.Nombres,
+                    t.Apellidos,
+                    EspecialidadNombre = t.EspecialidadNombre, // Mantenemos el nombre para evitar cambios en el Front
+                    t.Presentacion
+                });
+                return Ok(informativos);
+            }
+
+            // Para Admin y Terapeuta devolvemos el DTO completo
             return Ok(items);
         }
 
@@ -49,6 +70,7 @@ namespace CentroTerapia.API.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin,Terapeuta")]
         public async Task<ActionResult<TerapeutaDto>> Create([FromBody] CreateTerapeutaDto dto)
         {
             var created = await _service.CreateAsync(dto);
@@ -56,6 +78,7 @@ namespace CentroTerapia.API.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin,Terapeuta")]
         public async Task<ActionResult<TerapeutaDto>> Update(int id, [FromBody] UpdateTerapeutaDto dto)
         {
             try
@@ -70,6 +93,7 @@ namespace CentroTerapia.API.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin,Terapeuta")]
         public async Task<ActionResult> Delete(int id)
         {
             try

@@ -21,24 +21,29 @@ namespace CentroTerapia.API.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = "Admin,Padre")]
         public async Task<ActionResult<IEnumerable<FamiliaDto>>> GetAll()
         {
             var q = HttpContext.Request.Query;
             int page = int.TryParse(q["page"], out var p) ? p : 1;
             int pageSize = int.TryParse(q["pageSize"], out var ps) ? ps : 20;
             var search = q.ContainsKey("search") ? q["search"].ToString() : null;
-
-            var (items, total) = await _service.GetPagedAsync(page, pageSize, search);
+            var userRol = User.Claims.FirstOrDefault(c => c.Type == "role")?.Value;
+            var userCorreo = User.Claims.FirstOrDefault(c => c.Type == "email")?.Value;
+            var (items, total) = await _service.GetPagedAsync(page, pageSize, search, userCorreo, userRol);
             Response.Headers.Append("X-Total-Count", total.ToString());
             return Ok(items);
         }
 
         [HttpGet("{id}")]
+        [Authorize(Roles = "Admin,Padre")]
         public async Task<ActionResult<FamiliaDto>> GetById(int id)
         {
             try
             {
-                var item = await _service.GetByIdAsync(id);
+                var userRol = User.Claims.FirstOrDefault(c => c.Type == "role")?.Value;
+                var userCorreo = User.Claims.FirstOrDefault(c => c.Type == "email")?.Value;
+                var item = await _service.GetByIdAsync(id, userCorreo, userRol);
                 return Ok(item);
             }
             catch (NotFoundException ex)
@@ -48,6 +53,7 @@ namespace CentroTerapia.API.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<FamiliaDto>> Create([FromBody] CreateFamiliaDto dto)
         {
             var created = await _service.CreateAsync(dto);
@@ -55,6 +61,7 @@ namespace CentroTerapia.API.Controllers
         }
 
         [HttpPost("{familiaId}/pacientes")]
+        [Authorize(Roles = "Admin,Padre")]
         public async Task<ActionResult> AddDependiente(int familiaId, [FromBody] CreatePacienteDto dto)
         {
             try
@@ -74,6 +81,7 @@ namespace CentroTerapia.API.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin,Padre")]
         public async Task<ActionResult<FamiliaDto>> Update(int id, [FromBody] CreateFamiliaDto dto)
         {
             try

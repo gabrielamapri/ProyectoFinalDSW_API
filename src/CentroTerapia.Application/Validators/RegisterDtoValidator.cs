@@ -6,7 +6,7 @@ namespace CentroTerapia.Application.Validators
 {
     public class RegisterDtoValidator : AbstractValidator<RegisterDto>
     {
-        private readonly string[]  _validRoles = new[] { "Admin", "Veterinariam", "Receptionist" };
+        private readonly string[]  _validRoles = new[] { "Admin", "Terapeuta", "Padre" };
 
         public RegisterDtoValidator()
         {

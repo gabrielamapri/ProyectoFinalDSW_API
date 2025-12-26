@@ -6,6 +6,7 @@
         public string Password { get; set; } = string.Empty;
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
-        public string Role { get; set; } = "Receptionist";
+        // Solo puede ser "Admin", "Terapeuta" o "Padre"
+        public string Role { get; set; } = "Padre";
     }
 }

@@ -21,29 +21,14 @@ namespace CentroTerapia.Application.Services
             _logger = logger;
         }
 
-        public async Task<TipoSesionDto> CreateAsync(CreateTipoSesionDto dto)
-        {
-            var entity = _mapper.Map<TipoSesion>(dto);
-            var created = await _unitOfWork.TiposSesion.CreateAsync(entity);
-            await _unitOfWork.SaveChangesAsync();
-            return _mapper.Map<TipoSesionDto>(created);
-        }
-
-        public async Task<bool> DeleteAsync(int id)
-        {
-            var exists = await _unitOfWork.TiposSesion.ExistsAsync(id);
-            if (!exists) throw new NotFoundException("TipoSesion", id);
-            var result = await _unitOfWork.TiposSesion.DeleteAsync(id);
-            await _unitOfWork.SaveChangesAsync();
-            return result;
-        }
-
+        // 1. IMPLEMENTACIÓN DE GetAllAsync() SIN PARÁMETROS (Corrige el error CS0535)
         public async Task<IEnumerable<TipoSesionDto>> GetAllAsync()
         {
             var items = await _unitOfWork.TiposSesion.GetAllAsync();
             return _mapper.Map<IEnumerable<TipoSesionDto>>(items);
         }
 
+        // 2. IMPLEMENTACIÓN DE GetAllAsync con búsqueda
         public async Task<IEnumerable<TipoSesionDto>> GetAllAsync(string? search = null)
         {
             var items = await _unitOfWork.TiposSesion.GetAllAsync();
@@ -66,6 +51,14 @@ namespace CentroTerapia.Application.Services
             return _mapper.Map<TipoSesionDto>(item);
         }
 
+        public async Task<TipoSesionDto> CreateAsync(CreateTipoSesionDto dto)
+        {
+            var entity = _mapper.Map<TipoSesion>(dto);
+            var created = await _unitOfWork.TiposSesion.CreateAsync(entity);
+            await _unitOfWork.SaveChangesAsync();
+            return _mapper.Map<TipoSesionDto>(created);
+        }
+
         public async Task<TipoSesionDto> UpdateAsync(int id, UpdateTipoSesionDto dto)
         {
             var item = await _unitOfWork.TiposSesion.GetByIdAsync(id);
@@ -74,6 +67,15 @@ namespace CentroTerapia.Application.Services
             var updated = await _unitOfWork.TiposSesion.UpdateAsync(item);
             await _unitOfWork.SaveChangesAsync();
             return _mapper.Map<TipoSesionDto>(updated);
+        }
+
+        public async Task<bool> DeleteAsync(int id)
+        {
+            var exists = await _unitOfWork.TiposSesion.ExistsAsync(id);
+            if (!exists) throw new NotFoundException("TipoSesion", id);
+            var result = await _unitOfWork.TiposSesion.DeleteAsync(id);
+            await _unitOfWork.SaveChangesAsync();
+            return result;
         }
     }
 }
