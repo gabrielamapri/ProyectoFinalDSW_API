@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using CentroTerapia.Application.Interfaces;
 using CentroTerapia.Application.DTOs.Cita;
+using CentroTerapia.Application.DTOs.NotaSesion;
 using CentroTerapia.Domain.Exceptions;
 using AutoMapper;
 using System.Security.Claims;
@@ -13,6 +14,46 @@ namespace CentroTerapia.API.Controllers
     [Authorize] 
     public class CitasController : ControllerBase
     {
+        private readonly ICitaService _appointmentService;
+        private readonly IMapper _mapper;
+        private readonly IFamiliaService _familiaService;
+        private readonly INotaSesionService _notaSesionService;
+
+        public CitasController(ICitaService appointmentService, IMapper mapper, IFamiliaService familiaService, INotaSesionService notaSesionService)
+        {
+            _appointmentService = appointmentService;
+            _mapper = mapper;
+            _familiaService = familiaService;
+            _notaSesionService = notaSesionService;
+        }
+
+        /// <summary>
+        /// Marca una cita como Completada y crea la nota de sesión (solo Admin y Terapeuta)
+        /// </summary>
+        [Authorize(Roles = "Admin,Terapeuta")]
+        [HttpPatch("{id}/completar")]
+        public async Task<ActionResult> CompletarCita(int id, [FromBody] CreateNotaSesionDto notaDto)
+        {
+            if (string.IsNullOrWhiteSpace(notaDto.Notas))
+                return BadRequest(new { message = "La nota de sesión es obligatoria." });
+
+            // Validar que la cita existe
+            var cita = await _appointmentService.GetByIdAsync(id);
+            if (cita == null) return NotFound(new { message = "Cita no encontrada." });
+
+            // Actualizar estado a Completado
+            var updateDto = new UpdateCitaDto { Estado = "Completado" };
+            await _appointmentService.UpdateAsync(id, updateDto);
+
+            // Crear nota de sesión
+            notaDto.CitaId = id;
+            if (notaDto.TerapeutaId == 0 && cita.TerapeutaId.HasValue)
+                notaDto.TerapeutaId = cita.TerapeutaId.Value;
+            await _notaSesionService.CreateAsync(notaDto);
+
+            return Ok(new { message = "Cita completada y nota registrada." });
+        }
+
         [Authorize(Roles = "Admin,Terapeuta")]
         [HttpPatch("{id}/noasistio")]
         public async Task<ActionResult> MarcarNoAsistio(int id)
@@ -32,22 +73,10 @@ namespace CentroTerapia.API.Controllers
             }
         }
 
-        private readonly ICitaService _appointmentService;
-        private readonly IMapper _mapper;
-        private readonly IFamiliaService _familiaService;
-
-        public CitasController(ICitaService appointmentService, IMapper mapper, IFamiliaService familiaService)
-        {
-            _appointmentService = appointmentService;
-            _mapper = mapper;
-            _familiaService = familiaService;
-        }
-
         [Authorize(Roles = "Admin,Terapeuta")]
         [HttpGet("terapeuta/{terapeutaId}/rango-fechas")]
         public async Task<ActionResult<IEnumerable<CitaAlertaDto>>> GetByTerapeutaAndDateRange(int terapeutaId, [FromQuery] DateTime startDate, [FromQuery] DateTime endDate)
         {
-            // Si el usuario es Terapeuta, forzar el id desde el claim NameIdentifier
             if (User.IsInRole("Terapeuta"))
             {
                 var claim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
@@ -65,16 +94,11 @@ namespace CentroTerapia.API.Controllers
         [HttpGet("mis-citas")]
         public async Task<ActionResult<IEnumerable<CitaDto>>> GetCitasDeMisHijos([FromQuery] string? search = null)
         {
-            // 1. Intentar sacar el ID de la Familia del Token
             var familiaIdClaim = User.FindFirst("FamiliaId")?.Value ?? User.FindFirst("familiaId")?.Value;
             int familiaId = 0;
-            
             if (!string.IsNullOrEmpty(familiaIdClaim))
                 int.TryParse(familiaIdClaim, out familiaId);
-
             List<int> pacienteIds = new List<int>();
-
-            // 2. Si tenemos el ID, buscamos los pacientes de esa familia
             if (familiaId > 0)
             {
                 var familia = await _familiaService.GetByIdAsync(familiaId);
@@ -85,7 +109,6 @@ namespace CentroTerapia.API.Controllers
             }
             else
             {
-                // Respaldo por Email si el FamiliaId no está en el token
                 var email = User.FindFirst(ClaimTypes.Email)?.Value;
                 if (!string.IsNullOrEmpty(email))
                 {
@@ -97,17 +120,11 @@ namespace CentroTerapia.API.Controllers
                     }
                 }
             }
-
             if (pacienteIds.Count == 0)
                 return Ok(new List<CitaDto>());
-
-            // LLAMADA CORREGIDA: Se pasan los IDs de pacientes y el término de búsqueda
             var citas = await _appointmentService.GetByPacienteIdsAsync(pacienteIds, search);
-            
             return Ok(citas);
         }
-
-        // --- ENDPOINTS PARA ADMINISTRACIÓN / TERAPEUTAS ---
 
         [Authorize(Roles = "Admin,Terapeuta")]
         [HttpGet]
@@ -121,7 +138,6 @@ namespace CentroTerapia.API.Controllers
         [HttpGet("terapeuta/{terapeutaId}")]
         public async Task<ActionResult<IEnumerable<CitaDto>>> GetByTerapeutaId(int terapeutaId)
         {
-            // Si el usuario es Terapeuta, forzar el id desde el claim NameIdentifier
             if (User.IsInRole("Terapeuta"))
             {
                 var claim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
@@ -131,19 +147,15 @@ namespace CentroTerapia.API.Controllers
                 }
                 terapeutaId = idFromToken;
             }
-            // Admin puede consultar cualquier terapeuta
             var citas = await _appointmentService.GetByTerapeutaIdAsync(terapeutaId);
             return Ok(citas);
         }
-
-        // --- ENDPOINTS COMPARTIDOS CON SEGURIDAD ---
 
         [HttpGet("{id}")]
         public async Task<ActionResult<CitaDto>> GetById(int id)
         {
             var cita = await _appointmentService.GetByIdAsync(id);
             if (cita == null) return NotFound();
-            
             return Ok(cita);
         }
 

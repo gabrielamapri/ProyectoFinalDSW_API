@@ -10,7 +10,6 @@ START TRANSACTION;
 -- Los hashes bcrypt incluidos son válidos; si deseas cambiarlos, sustituye por nuevos hashes bcrypt.
 -- Ejemplo C#: BCrypt.Net.BCrypt.HashPassword("TuPasswordSeguro123!")
 
-
 -- Admin
 INSERT INTO Users (Correo, HashContrasena, Nombres, Apellidos, Rol, FechaCreacion, Activo)
 VALUES ('admin@centro.local', '$2a$11$MSFHhJuQWAooQDCzfZKoNuCKgY/B/lr40SF8ZDsa9I72gW.ic.VJm', 'Admin', 'Sistema', 'Admin', NOW(), 1);
@@ -34,29 +33,57 @@ VALUES ('912345000', 'Lucía', 'Fernández', '23456789', 'Calle Luna 45', 'lucia
 SET @familia2 = LAST_INSERT_ID();
 
 INSERT INTO Familias (TelefonoContacto, ResponsablePrincipalNombre, ResponsablePrincipalApellido, ResponsablePrincipalDNI, ResponsablePrincipalDireccion, ResponsablePrincipalEmail, ResponsablePrincipalTelefono, ResponsablePrincipalRelacion, Responsable2Nombre, Responsable2Apellido, Responsable2DNI, Responsable2Direccion, Responsable2Telefono, Responsable2Relacion, FechaCreacion)
-VALUES ('911223344', 'José', 'Martínez', '34567890', 'Pje. Sol 8', 'jose.martinez@email.com', '911223344', 'Padre', NULL, NULL, NULL, NULL, NULL, NULL, NOW());
+VALUES ('911223344', 'José', 'Martínez', '34567890', 'Pje. Sol 8', 'jose.martinez@email.com', '911223344', 'Padre', 'Ana', 'Martínez', '44556677', 'Pje. Sol 8', '911223345', 'Madre', NOW());
 SET @familia3 = LAST_INSERT_ID();
 
+INSERT INTO Familias (TelefonoContacto, ResponsablePrincipalNombre, ResponsablePrincipalApellido, ResponsablePrincipalDNI, ResponsablePrincipalDireccion, ResponsablePrincipalEmail, ResponsablePrincipalTelefono, ResponsablePrincipalRelacion, Responsable2Nombre, Responsable2Apellido, Responsable2DNI, Responsable2Direccion, Responsable2Telefono, Responsable2Relacion, FechaCreacion)
+VALUES ('900111222', 'Pedro', 'Ramírez', '55667788', 'Av. Los Pinos 50', 'pedro.ramirez@email.com', '900111222', 'Padre', 'Laura', 'Ramírez', '66778899', 'Av. Los Pinos 50', '900111223', 'Madre', NOW());
+SET @familia4 = LAST_INSERT_ID();
+
+INSERT INTO Familias (TelefonoContacto, ResponsablePrincipalNombre, ResponsablePrincipalApellido, ResponsablePrincipalDNI, ResponsablePrincipalDireccion, ResponsablePrincipalEmail, ResponsablePrincipalTelefono, ResponsablePrincipalRelacion, Responsable2Nombre, Responsable2Apellido, Responsable2DNI, Responsable2Direccion, Responsable2Telefono, Responsable2Relacion, FechaCreacion)
+VALUES ('933222333', 'Miguel', 'Torres', '77889900', 'Calle Robles 77', 'miguel.torres@email.com', '933222333', 'Padre', 'Paula', 'Torres', '88990011', 'Calle Robles 77', '933222334', 'Madre', NOW());
+SET @familia5 = LAST_INSERT_ID();
+
+
+-- Familia 1: Gómez
 INSERT INTO Pacientes (Nombres, Apellidos, FechaNacimiento, Sexo, FechaCreacion, NombreContactoEmergencia, NumeroContactoEmergencia, FamiliaId, DNI)
 VALUES ('Lucas', 'Gómez', '2018-05-15', 0, NOW(), 'María Gómez', '987654321', @familia1, '11111111');
 SET @paciente1 = LAST_INSERT_ID();
-
 INSERT INTO Pacientes (Nombres, Apellidos, FechaNacimiento, Sexo, FechaCreacion, NombreContactoEmergencia, NumeroContactoEmergencia, FamiliaId, DNI)
-VALUES ('Sofía', 'Fernández', '2016-03-20', 1, NOW(), 'Lucía Fernández', '912345000', @familia2, '22222222');
+VALUES ('Camila', 'Gómez', '2020-09-10', 1, NOW(), 'Carlos Gómez', '987654322', @familia1, '11111112');
 SET @paciente2 = LAST_INSERT_ID();
 
+-- Familia 2: Fernández
 INSERT INTO Pacientes (Nombres, Apellidos, FechaNacimiento, Sexo, FechaCreacion, NombreContactoEmergencia, NumeroContactoEmergencia, FamiliaId, DNI)
-VALUES ('Mateo', 'Martínez', '2019-11-10', 0, NOW(), 'José Martínez', '911223344', @familia3, '33333333');
+VALUES ('Sofía', 'Fernández', '2016-03-20', 1, NOW(), 'Lucía Fernández', '912345000', @familia2, '22222222');
 SET @paciente3 = LAST_INSERT_ID();
-
 INSERT INTO Pacientes (Nombres, Apellidos, FechaNacimiento, Sexo, FechaCreacion, NombreContactoEmergencia, NumeroContactoEmergencia, FamiliaId, DNI)
-VALUES ('Valentina', 'Lopez', '2020-07-01', 1, NOW(), 'Ana López', '912345678', @familia2, '44444444');
+VALUES ('Valentina', 'Fernández', '2019-07-01', 1, NOW(), 'Sofía Fernández', '912345001', @familia2, '22222223');
 SET @paciente4 = LAST_INSERT_ID();
 
+-- Familia 3: Martínez
 INSERT INTO Pacientes (Nombres, Apellidos, FechaNacimiento, Sexo, FechaCreacion, NombreContactoEmergencia, NumeroContactoEmergencia, FamiliaId, DNI)
-VALUES ('Diego', 'Ramos', '2017-12-12', 0, NOW(), 'Contacto N/A', '000000000', @familia3, '55555555');
+VALUES ('Mateo', 'Martínez', '2019-11-10', 0, NOW(), 'José Martínez', '911223344', @familia3, '33333333');
 SET @paciente5 = LAST_INSERT_ID();
+INSERT INTO Pacientes (Nombres, Apellidos, FechaNacimiento, Sexo, FechaCreacion, NombreContactoEmergencia, NumeroContactoEmergencia, FamiliaId, DNI)
+VALUES ('Diego', 'Martínez', '2017-12-12', 0, NOW(), 'Ana Martínez', '911223345', @familia3, '33333334');
+SET @paciente6 = LAST_INSERT_ID();
 
+-- Familia 4: Ramírez
+INSERT INTO Pacientes (Nombres, Apellidos, FechaNacimiento, Sexo, FechaCreacion, NombreContactoEmergencia, NumeroContactoEmergencia, FamiliaId, DNI)
+VALUES ('Luciana', 'Ramírez', '2015-08-22', 1, NOW(), 'Laura Ramírez', '900111223', @familia4, '44444444');
+SET @paciente7 = LAST_INSERT_ID();
+INSERT INTO Pacientes (Nombres, Apellidos, FechaNacimiento, Sexo, FechaCreacion, NombreContactoEmergencia, NumeroContactoEmergencia, FamiliaId, DNI)
+VALUES ('Gabriel', 'Ramírez', '2013-04-17', 0, NOW(), 'Pedro Ramírez', '900111222', @familia4, '44444445');
+SET @paciente8 = LAST_INSERT_ID();
+
+-- Familia 5: Torres
+INSERT INTO Pacientes (Nombres, Apellidos, FechaNacimiento, Sexo, FechaCreacion, NombreContactoEmergencia, NumeroContactoEmergencia, FamiliaId, DNI)
+VALUES ('Martina', 'Torres', '2017-10-05', 1, NOW(), 'Paula Torres', '933222334', @familia5, '55555555');
+SET @paciente9 = LAST_INSERT_ID();
+INSERT INTO Pacientes (Nombres, Apellidos, FechaNacimiento, Sexo, FechaCreacion, NombreContactoEmergencia, NumeroContactoEmergencia, FamiliaId, DNI)
+VALUES ('Emilio', 'Torres', '2014-02-28', 0, NOW(), 'Miguel Torres', '933222333', @familia5, '55555556');
+SET @paciente10 = LAST_INSERT_ID();
 
 -- 4) Especialidades (crear registros referenciables)
 INSERT INTO Especialidades (Nombre, Descripcion, FechaCreacion)
@@ -111,21 +138,60 @@ VALUES ('Sesión de Terapia Ocupacional', 45, 25.00, 'Sesión relacionada con la
 SET @tipo4Id = LAST_INSERT_ID();
 
 -- 7) Franjas de disponibilidad (recurrentes por día de semana)
-INSERT INTO FranjasDisponibilidad (TerapeutaId, Fecha, DiaSemana, HoraInicio, HoraFin, Recurrente)
-VALUES
-(@terapeuta1Id, NULL, 1, '09:00:00', '13:00:00', 1), -- Ana, lunes
-(@terapeuta1Id, NULL, 3, '14:00:00', '18:00:00', 1), -- Ana, miércoles
-(@terapeuta2Id, NULL, 2, '08:30:00', '12:30:00', 1), -- Raúl, martes
-(@terapeuta3Id, NULL, 4, '10:00:00', '14:00:00', 1), -- Marcos, jueves
-(@terapeuta4Id, NULL, 5, '09:00:00', '13:00:00', 1); -- Elena, viernes
+
+-- Franjas de disponibilidad actualizadas
+-- Ana: lunes a viernes de 09:00:00 a 19:00:00
+INSERT INTO FranjasDisponibilidad (TerapeutaId, Fecha, DiaSemana, HoraInicio, HoraFin, Recurrente) VALUES
+(@terapeuta1Id, NULL, 1, '09:00:00', '19:00:00', 1), -- lunes
+(@terapeuta1Id, NULL, 2, '09:00:00', '19:00:00', 1), -- martes
+(@terapeuta1Id, NULL, 3, '09:00:00', '19:00:00', 1), -- miércoles
+(@terapeuta1Id, NULL, 4, '09:00:00', '19:00:00', 1), -- jueves
+(@terapeuta1Id, NULL, 5, '09:00:00', '19:00:00', 1), -- viernes
+(@terapeuta1Id, NULL, 6, '07:00:00', '19:00:00', 1); -- sabado
+
+-- Raúl: lunes, miércoles y viernes de 07:00:00 a 15:00:00
+INSERT INTO FranjasDisponibilidad (TerapeutaId, Fecha, DiaSemana, HoraInicio, HoraFin, Recurrente) VALUES
+(@terapeuta2Id, NULL, 1, '07:00:00', '15:00:00', 1), -- lunes
+(@terapeuta2Id, NULL, 3, '07:00:00', '15:00:00', 1), -- miércoles
+(@terapeuta2Id, NULL, 5, '07:00:00', '15:00:00', 1); -- viernes
+
+-- Marcos: martes y jueves de 08:00:00 a 19:00:00
+INSERT INTO FranjasDisponibilidad (TerapeutaId, Fecha, DiaSemana, HoraInicio, HoraFin, Recurrente) VALUES
+(@terapeuta3Id, NULL, 2, '08:00:00', '19:00:00', 1), -- martes
+(@terapeuta3Id, NULL, 4, '08:00:00', '19:00:00', 1); -- jueves
+
+-- Elena: jueves, viernes y sábado de 07:00:00 a 14:00:00
+INSERT INTO FranjasDisponibilidad (TerapeutaId, Fecha, DiaSemana, HoraInicio, HoraFin, Recurrente) VALUES
+(@terapeuta4Id, NULL, 4, '07:00:00', '14:00:00', 1), -- jueves
+(@terapeuta4Id, NULL, 5, '07:00:00', '14:00:00', 1), -- viernes
+(@terapeuta4Id, NULL, 6, '07:00:00', '14:00:00', 1); -- sábado
+
+
 
 -- 8) Citas (usar `TipoSesionId` acorde a entidades actuales)
-INSERT INTO Citas (Fecha, Motivo, Estado, Notas, FechaCreacion, PacienteId, TerapeutaId, TipoSesionId, DuracionMinutos)
-VALUES
-('2025-12-22 10:00:00', 'Evaluación inicial de lenguaje', 'Scheduled', 'Traer informes médicos', NOW(), @paciente1, @terapeuta1Id, @tipo1Id, 45),
-('2025-12-23 09:30:00', 'Sesión de estimulación', 'Scheduled', NULL, NOW(), @paciente2, @terapeuta2Id, @tipo3Id, 45), -- usa fisio pediátrica con Raúl
-('2025-12-24 11:00:00', 'Fisioterapia seguimiento', 'Scheduled', NULL, NOW(), @paciente3, @terapeuta2Id, @tipo3Id, 45),
-('2025-12-25 10:30:00', 'Terapia ocupacional', 'Scheduled', 'Evaluar motricidad fina', NOW(), @paciente4, @terapeuta3Id, @tipo4Id, 45);
+
+INSERT INTO Citas (Fecha, Motivo, Estado, Notas, FechaCreacion, PacienteId, TerapeutaId, TipoSesionId, DuracionMinutos) VALUES
+
+('2025-12-02 09:00:00', 'Control mensual', 'Completada', 'Sesión completada con éxito', NOW(), @paciente1, @terapeuta1Id, @tipo1Id, 45), -- Lucas Gómez con Ana López
+('2025-12-05 10:00:00', 'Evaluación', 'Completada', 'Evaluación finalizada, sin novedades', NOW(), @paciente2, @terapeuta1Id, @tipo1Id, 45),
+('2025-12-10 11:00:00', 'Revisión', 'NoAsistio', 'Paciente no asistió a la cita', NOW(), @paciente1, @terapeuta1Id, @tipo1Id, 45), -- Lucas Gómez con Ana López
+('2025-12-12 12:00:00', 'Seguimiento', 'NoAsistio', 'No se presentó el paciente', NOW(), @paciente3, @terapeuta2Id, @tipo3Id, 45),
+('2025-12-15 13:00:00', 'Consulta', 'Cancelada', 'Cita cancelada por el paciente', NOW(), @paciente4, @terapeuta2Id, @tipo3Id, 45),
+('2025-12-20 14:00:00', 'Terapia especial', 'Cancelada', 'Cancelada por motivos personales', NOW(), @paciente5, @terapeuta3Id, @tipo4Id, 45),
+('2025-12-27 16:00:00', 'Sesión de lenguaje', 'Scheduled', 'Cita especial sábado', NOW(), @paciente1, @terapeuta1Id, @tipo1Id, 45), -- Lucas Gómez con Ana (sábado)
+('2025-12-29 10:00:00', 'Seguimiento', 'Scheduled', NULL, NOW(), @paciente2, @terapeuta1Id, @tipo1Id, 45), -- Camila Gómez con Ana (lunes)
+('2025-12-29 07:30:00', 'Fisioterapia', 'Scheduled', NULL, NOW(), @paciente3, @terapeuta2Id, @tipo3Id, 45), -- Sofía Fernández con Raúl (lunes)
+('2025-12-31 07:00:00', 'Fisioterapia', 'Scheduled', NULL, NOW(), @paciente4, @terapeuta2Id, @tipo3Id, 45), -- Valentina Fernández con Raúl (miércoles)
+('2026-01-02 09:00:00', 'Terapia ocupacional', 'Scheduled', NULL, NOW(), @paciente5, @terapeuta3Id, @tipo4Id, 45), -- Mateo Martínez con Marcos (viernes)
+('2026-01-06 08:00:00', 'Terapia ocupacional', 'Scheduled', NULL, NOW(), @paciente6, @terapeuta3Id, @tipo4Id, 45), -- Diego Martínez con Marcos (martes)
+('2026-01-08 07:00:00', 'Psicología infantil', 'Scheduled', NULL, NOW(), @paciente7, @terapeuta4Id, @tipo2Id, 45), -- Luciana Ramírez con Elena (jueves)
+('2026-01-09 07:00:00', 'Psicología infantil', 'Scheduled', NULL, NOW(), @paciente8, @terapeuta4Id, @tipo2Id, 45), -- Gabriel Ramírez con Elena (viernes)
+('2026-01-03 09:00:00', 'Lenguaje', 'Scheduled', NULL, NOW(), @paciente9, @terapeuta1Id, @tipo1Id, 45), -- Martina Torres con Ana (sábado)
+('2025-12-27 09:00:00', 'Control especialidad', 'Scheduled', NULL, NOW(), @paciente2, @terapeuta1Id, @tipo1Id, 45),
+('2025-12-30 09:00:00', 'Seguimiento especialidad', 'Scheduled', NULL, NOW(), @paciente2, @terapeuta1Id, @tipo1Id, 45),
+('2025-12-27 10:00:00', 'Control especialidad', 'Scheduled', NULL, NOW(), @paciente1, @terapeuta1Id, @tipo1Id, 45),
+('2025-12-30 10:00:00', 'Seguimiento especialidad', 'Scheduled', NULL, NOW(), @paciente1, @terapeuta1Id, @tipo1Id, 45),
+('2026-01-05 09:00:00', 'Lenguaje', 'Scheduled', NULL, NOW(), @paciente10, @terapeuta1Id, @tipo1Id, 45); -- Emilio Torres con Ana (lunes)
 SET @cita1Id = LAST_INSERT_ID();
 
 -- 9) Notas de sesión (asociadas a citas)

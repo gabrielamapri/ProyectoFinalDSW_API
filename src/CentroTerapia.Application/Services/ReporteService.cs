@@ -276,9 +276,10 @@ namespace CentroTerapia.Application.Services
                     TipoSesionId = tipoSesionId,
                     EstadoFiltro = estado,
                     TotalCitas = total,
-                    Completadas = citasOrdenadas.Count(c => c.Estado == "Completed"),
-                    Canceladas = citasOrdenadas.Count(c => c.Estado == "Cancelled"),
+                    Completadas = citasOrdenadas.Count(c => c.Estado == "Completed" || c.Estado == "Completada"),
+                    Canceladas = citasOrdenadas.Count(c => c.Estado == "Cancelled" || c.Estado == "Cancelada"),
                     Programadas = citasOrdenadas.Count(c => c.Estado == "Scheduled"),
+                    NoAsistio = citasOrdenadas.Count(c => c.Estado == "NoAsistio"),
                     Citas = detalles,
                     Pagination = new PaginationDto
                     {

@@ -26,6 +26,7 @@ namespace CentroTerapia.Application.DTOs.Reportes
         public int Completadas { get; set; }
         public int Canceladas { get; set; }
         public int Programadas { get; set; }
+        public int NoAsistio { get; set; }
         public List<CitaDetalleDto> Citas { get; set; } = new();
         public PaginationDto Pagination { get; set; } = new PaginationDto();
     }

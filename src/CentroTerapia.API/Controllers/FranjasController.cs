@@ -62,7 +62,7 @@ namespace CentroTerapia.API.Controllers
         }
 
         [HttpGet("{terapeutaId}/slots")]
-        public async Task<ActionResult<IEnumerable<CentroTerapia.Application.DTOs.Franja.SlotDto>>> GetSlots(int terapeutaId, [FromQuery] DateTime date, [FromQuery] int duracion = 60)
+        public async Task<ActionResult<IEnumerable<SlotDto>>> GetSlots(int terapeutaId, [FromQuery] DateTime date, [FromQuery] int duracion = 60)
         {
             if (duracion <= 0) duracion = 60;
             var slots = await _service.GetAvailableSlotsAsync(terapeutaId, date.Date, duracion);

@@ -42,7 +42,7 @@ namespace CentroTerapia.API.Controllers
                 return BadRequest(new { message = "El nombre es obligatorio." });
             var entity = new CentroTerapia.Domain.Entities.Especialidad
             {
-                Nombre = dto.Nombre,
+                Nombre = dto.Nombre ?? string.Empty,
                 Descripcion = dto.Descripcion
             };
             _db.Especialidades.Add(entity);
@@ -87,7 +87,7 @@ namespace CentroTerapia.API.Controllers
         public class EspecialidadDto
         {
             public int? Id { get; set; }
-            public string Nombre { get; set; }
+            public string Nombre { get; set; } = string.Empty;
             public string? Descripcion { get; set; }
         }
     }
